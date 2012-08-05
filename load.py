@@ -2,6 +2,7 @@
 import re
 import copy
 import ujson
+import pickle
 
 class WordCell(dict):
     word_ref=None
