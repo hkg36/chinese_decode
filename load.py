@@ -49,13 +49,14 @@ class FoundWord:
         self.tree_pos=treepos
 
 class LineSpliter:
-    def __init__(self):
+    def __init__(self,search_root):
         self.number_set=set()
         for char in u"0123456789.一二三四五六七八九十百千万亿几某":
             self.number_set.add(char)
         self.number=''
         self.process_work=[]
         self.found_word=[]
+        self.search_root=search_root
 
     def ProcessCellDie(self,one_proc):
         if one_proc.word_ref!=None:
@@ -69,7 +70,7 @@ class LineSpliter:
                     self.found_word.append(FoundWord(one_proc.word_ref,self.index-pre_index,one_proc))
                     break
 
-    def ProcessLine(self,word_dict_root,line):
+    def ProcessLine(self,line):
         for self.index in range(len(line)):
             char=line[self.index]
             if char in self.number_set:#检查数词的存在
@@ -81,11 +82,13 @@ class LineSpliter:
                 read_number=self.number
                 self.number=''
                 if len(read_number)>0:
-                    self.found_word.append(FoundWord(read_number,self.index,None))
-                    self.process_work.append(word_dict_root['n'])
+                    found_word=FoundWord(read_number,self.index,None)
+                    found_word.is_number=True
+                    self.found_word.append(found_word)
+                    #self.process_work.append(self.search_root['n'])
 
             if len(self.process_work)==0:
-                self.process_work.append(word_dict_root)
+                self.process_work.append(self.search_root)
             next_round_process_word=[]
             need_create_new_process=False
             has_one_success=False
@@ -101,11 +104,11 @@ class LineSpliter:
                     self.ProcessCellDie(one_proc)
 
             if has_one_success==False:
-                if word_dict_root.has_key(char):
+                if self.search_root.has_key(char):
                     need_create_new_process=False
-                    next_round_process_word.append(word_dict_root[char])
+                    next_round_process_word.append(self.search_root[char])
             if need_create_new_process:
-                next_round_process_word.append(word_dict_root)
+                next_round_process_word.append(self.search_root)
 
             self.process_work=next_round_process_word
 
@@ -117,15 +120,17 @@ class LineSpliter:
 
         self.CheckDoubleOverlap()
         self.CheckCantantPre()
-        self.CheckAfterOverlap()
         self.CheckTail()
+        self.CheckAfterOverlap()
+
         return self.found_word
 
     def CheckDoubleOverlap(self):
+        start_pos=len(self.found_word)-2;
         while True:
             gorecheck=False
             if len(self.found_word)>=3: #检查当前词语刚好前半部分是前一个词后半部分是后一个词 当前词删除
-                for index in range(len(self.found_word)-2,0,-1):
+                for index in range(start_pos,0,-1):
                     pre_word=self.found_word[index-1]
                     #if len(pre_word.word)==1:
                     #    continue
@@ -137,6 +142,7 @@ class LineSpliter:
                     for i2 in range(1,len(now_word.word)):
                         if pre_word.word.endswith(now_word.word[0:i2]):
                             if aft_word.word.startswith(now_word.word[i2:]):
+                                start_pos=min(start_pos+1,len(self.found_word)-3)
                                 gorecheck=True
                                 del self.found_word[index]
                                 break
@@ -148,15 +154,11 @@ class LineSpliter:
     def CheckCantantPre(self):
         #检查前一个词语是当前词语的一部分 全文索引不需要这个
         if len(self.found_word)>=2:
-            res_found_word=[]
-            first_word=self.found_word[0]
-            for index in range(1,len(self.found_word)):
+            for index in range(len(self.found_word)-1,0,-1):
                 word=self.found_word[index]
-                if word.word.find(first_word.word)==-1:
-                    res_found_word.append(first_word)
-                first_word=word
-            res_found_word.append(self.found_word[len(self.found_word)-1])
-            self.found_word=res_found_word
+                pre_word=self.found_word[index-1]
+                if word.word.find(pre_word.word)>=0:
+                    del self.found_word[index-1]
 
     def CheckAfterOverlap(self):
         #后词包含前词的结尾的时候，重叠部分归后词
@@ -187,14 +189,14 @@ class LineSpliter:
         if len(self.found_word)>=2:
             res_found_word=[]
             last_word=self.found_word[len(self.found_word)-1]
-            for index in range(len(self.found_word)-2,-1,-1):
+            index=0
+            while index<(len(self.found_word)-1):
                 word=self.found_word[index]
-                if word.word.endswith(last_word.word)==False:
-                    res_found_word.append(last_word)
-                last_word=word
-            res_found_word.append(self.found_word[0])
-            res_found_word.reverse()
-            self.found_word=res_found_word
+                word_aft=self.found_word[index+1]
+                if word.word.endswith(word_aft.word):
+                    del self.found_word[index+1]
+                else:
+                    index+=1
 
 fp=open('testdata.txt','r')
 full_text=fp.read().decode('utf-8')
@@ -208,7 +210,7 @@ for tp in text_pice:
 
 for tp in text_list:
     print tp
-    spliter=LineSpliter()
-    words=spliter.ProcessLine(word_dict_root,tp)
+    spliter=LineSpliter(word_dict_root)
+    words=spliter.ProcessLine(tp)
     for word in words:
         print '》'*word.pos,word.word
