@@ -3,6 +3,7 @@ import re
 import copy
 import ujson
 import pickle
+import string
 
 class WordCell(dict):
     word_ref=None
@@ -11,34 +12,60 @@ class WordCell(dict):
         for line in all_line:
             line=line.strip()
             line_text=line.decode('utf-8')
+            self.AddWordToTree(line_text)
 
-            startcell=None
-            if self.has_key(line_text[0]):
-                startcell=self[line_text[0]]
+    def AddWordToTree(self,line_text):
+        startcell=None
+        if self.has_key(line_text[0]):
+            startcell=self[line_text[0]]
+        else:
+            startcell=WordCell()
+            self[line_text[0]]=startcell
+        for word in line_text[1:]:
+            thiscell=None
+            if startcell.has_key(word):
+                thiscell=startcell[word]
             else:
-                startcell=WordCell()
-                self[line_text[0]]=startcell
-            for word in line_text[1:]:
-                thiscell=None
-                if startcell.has_key(word):
-                    thiscell=startcell[word]
-                else:
-                    thiscell=WordCell()
-                    thiscell.word_pre=startcell
-                    startcell[word]=thiscell
-                startcell=thiscell
-            startcell.word_ref=line_text
+                thiscell=WordCell()
+                thiscell.word_pre=startcell
+                startcell[word]=thiscell
+            startcell=thiscell
+        startcell.word_ref=line_text
+        return startcell
+
+    def LoadSogouData(self,all_line):
+        line_reader=re.compile("^([^\s]*)\s+(\d*)\s+(.*)",re.IGNORECASE)
+        for line in all_line:
+            line=line.decode('utf-8')
+            re_res=line_reader.match(line)
+            word=re_res.group(1)
+            freq=string.atoi(re_res.group(2))
+
+            word_type=[]
+            word_typelist=re_res.group(3).split(',')
+            for one in word_typelist:
+                one=one.strip()
+                if len(one)>0:
+                    word_type.append(one)
+
+            addedCell=self.AddWordToTree(word)
+            addedCell.freq=freq
+            addedCell.word_type=word_type
 
 word_dict_root=WordCell()
 
-fp=open('chinese_data.txt','r')
+"""fp=open('chinese_data.txt','r') ##网友整理
+all_line=fp.readlines()
+fp.close()
+word_dict_root.BuildFindTree(all_line)"""
+fp=open('word3.txt','r')## 来自国家语言委员会
 all_line=fp.readlines()
 fp.close()
 word_dict_root.BuildFindTree(all_line)
-fp=open('word3.txt','r')
+fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
 all_line=fp.readlines()
 fp.close()
-word_dict_root.BuildFindTree(all_line)
+word_dict_root.LoadSogouData(all_line)
 
 class FoundWord:
     word=None
