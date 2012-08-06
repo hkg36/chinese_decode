@@ -57,21 +57,6 @@ class WordTree(WordCell):
             self.word_type[word]=word_type
             #addedCell.word_type=word_type
 
-word_dict_root=WordTree()
-
-"""fp=open('chinese_data.txt','r') ##网友整理
-all_line=fp.readlines()
-fp.close()
-word_dict_root.BuildFindTree(all_line)"""
-fp=open('word3.txt','r')## 来自国家语言委员会
-all_line=fp.readlines()
-fp.close()
-word_dict_root.BuildFindTree(all_line)
-fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
-all_line=fp.readlines()
-fp.close()
-word_dict_root.LoadSogouData(all_line)
-
 class FoundWord:
     word=None
     tree_pos=None
@@ -82,7 +67,7 @@ class FoundWord:
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
-        for char in u"0123456789.一二三四五六七八九十百千万亿几某":
+        for char in u"0123456789%.一二三四五六七八九十百千万亿几某":
             self.number_set.add(char)
         self.no_cn=''
         self.process_work=[]
@@ -106,28 +91,22 @@ class LineSpliter:
         if one_proc!=None:
             self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
 
+    def CheckNoCnFound(self):
+        if self.no_cn_fin:
+            if len(self.no_cn)>0:
+                found_word=FoundWord(self.no_cn,None)
+                found_word.is_no_cn=True
+                self.found_word.append(found_word)
+            self.no_cn=''
+
     def ProcessLine(self,line):
         for self.index in range(len(line)):
+            self.no_cn_fin=False
             char=line[self.index]
-            if char in self.number_set:#检查数词的存在
-                for one_proc in self.process_work:
-                    self.ProcessCellDie(one_proc)
-                self.process_work=[]
-                self.no_cn=self.no_cn+char
-            elif re.match("[a-zA-Z]",char):
-                for one_proc in self.process_work:
-                    self.ProcessCellDie(one_proc)
-                self.process_work=[]
-                self.number_found=False
+            if char in self.number_set or re.match("[a-zA-Z]",char):
                 self.no_cn=self.no_cn+char
             else:
-                read_no_cn=self.no_cn
-                self.no_cn=''
-                if len(read_no_cn)>0:
-                    found_word=FoundWord(read_no_cn,None)
-                    found_word.is_no_cn=True
-                    self.found_word.append(found_word)
-                    #self.process_work.append(self.search_root['n'])
+                self.no_cn_fin=True
 
             if len(self.process_work)==0:
                 self.process_work.append(self.search_root)
@@ -144,6 +123,7 @@ class LineSpliter:
                         need_create_new_process=True
                 else:
                     self.ProcessCellDie(one_proc)
+                    self.CheckNoCnFound()
 
             if has_one_success==False:
                 if self.search_root.has_key(char):
@@ -213,7 +193,9 @@ class LineSpliter:
                 for i2 in range(1,len(aft_word.word)):
                     word_pice=aft_word.word[0:i2]
                     if now_word.word.endswith(word_pice):
-                        if aft_word.tree_pos.freq>=now_word.tree_pos.freq:
+                        if aft_word.tree_pos==None or now_word.tree_pos==None or \
+                            aft_word.tree_pos.freq>=now_word.tree_pos.freq :
+                            #字归后词 裁剪前词
                             new_word=now_word.word
                             new_word=new_word[0:len(new_word)-i2]
                             now_word.word=new_word
@@ -238,19 +220,36 @@ class LineSpliter:
                 else:
                     index+=1
 
-fp=open('testdata.txt','r')
-full_text=fp.read().decode('utf-8')
-fp.close()
-text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
-text_list=[]
-for tp in text_pice:
-    tp=tp.strip()
-    if len(tp)>0:
-        text_list.append(tp)
+if __name__ == '__main__':
+    word_dict_root=WordTree()
+    """fp=open('chinese_data.txt','r') ##网友整理
+    all_line=fp.readlines()
+    fp.close()
+    word_dict_root.BuildFindTree(all_line)"""
+    fp=open('word3.txt','r')## 来自国家语言委员会
+    all_line=fp.readlines()
+    fp.close()
+    word_dict_root.BuildFindTree(all_line)
+    fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
+    all_line=fp.readlines()
+    fp.close()
+    word_dict_root.LoadSogouData(all_line)
 
-for tp in text_list:
-    print tp
-    spliter=LineSpliter(word_dict_root)
-    words=spliter.ProcessLine(tp)
-    for word in words:
-        print u">>%s"%(word.word,)
+    full_text=u"从数字上就说明一切"
+    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
+    text_list=[]
+    for tp in text_pice:
+        tp=tp.strip()
+        if len(tp)>0:
+            text_list.append(tp)
+
+    for tp in text_list:
+        print tp
+        spliter=LineSpliter(word_dict_root)
+        words=spliter.ProcessLine(tp)
+        for word in words:
+            if word_dict_root.word_type.has_key(word.word):
+                types=word_dict_root.word_type[word.word]
+            else:
+                types=None
+            print u">>%s %s"%(word.word,str(types))
