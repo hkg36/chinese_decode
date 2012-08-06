@@ -1,7 +1,7 @@
 #-*-coding:utf-8-*-
 import re
 import copy
-import ujson
+import json
 import pickle
 import string
 
