@@ -67,7 +67,7 @@ class FoundWord:
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
-        for char in u"0123456789%.一二三四五六七八九十百千万亿几某":
+        for char in u"0123456789%.一二三四五六七八九十百千万亿几某多":
             self.number_set.add(char)
         self.no_cn=''
         self.process_work=[]
@@ -140,10 +140,13 @@ class LineSpliter:
             if one_proc.word_ref!=None:
                 self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
 
-        self.CheckDoubleOverlap()
+        #self.CheckDoubleOverlap()
+
+        self.CheckTail()
+        self.CheckCantantPre()
+        self.CheckAfterOverlap()
         self.CheckCantantPre()
         self.CheckTail()
-        self.CheckAfterOverlap()
 
         return self.found_word
 
@@ -235,7 +238,7 @@ if __name__ == '__main__':
     fp.close()
     word_dict_root.LoadSogouData(all_line)
 
-    full_text=u"从数字上就说明一切"
+    full_text=u"你以为那短信我看不懂"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:
