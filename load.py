@@ -8,6 +8,10 @@ import string
 class WordCell(dict):
     word_ref=None
     word_pre=None
+    freq=0
+
+class WordTree(WordCell):
+    word_type={}
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()
@@ -50,9 +54,10 @@ class WordCell(dict):
 
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
-            addedCell.word_type=word_type
+            self.word_type[word]=word_type
+            #addedCell.word_type=word_type
 
-word_dict_root=WordCell()
+word_dict_root=WordTree()
 
 """fp=open('chinese_data.txt','r') ##网友整理
 all_line=fp.readlines()
@@ -69,11 +74,9 @@ word_dict_root.LoadSogouData(all_line)
 
 class FoundWord:
     word=None
-    pos=-1
     tree_pos=None
-    def __init__(self,str,nowpos,treepos):
+    def __init__(self,str,treepos):
         self.word=str
-        self.pos=nowpos-len(str)
         self.tree_pos=treepos
 
 class LineSpliter:
@@ -81,22 +84,27 @@ class LineSpliter:
         self.number_set=set()
         for char in u"0123456789.一二三四五六七八九十百千万亿几某":
             self.number_set.add(char)
-        self.number=''
+        self.no_cn=''
         self.process_work=[]
         self.found_word=[]
         self.search_root=search_root
 
-    def ProcessCellDie(self,one_proc):
+    def CheckProcessCell(self,one_proc):
         if one_proc.word_ref!=None:
-            self.found_word.append(FoundWord(one_proc.word_ref,self.index,one_proc))
+            return one_proc
         else: #无法找到词语的时候，回溯比当前位置短的最长词语
             pre_index=0
             while one_proc.word_pre!=None:
                 pre_index+=1
                 one_proc=one_proc.word_pre
                 if one_proc.word_ref!=None:
-                    self.found_word.append(FoundWord(one_proc.word_ref,self.index-pre_index,one_proc))
-                    break
+                    return one_proc
+        return None
+
+    def ProcessCellDie(self,one_proc):
+        one_proc=self.CheckProcessCell(one_proc)
+        if one_proc!=None:
+            self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
 
     def ProcessLine(self,line):
         for self.index in range(len(line)):
@@ -105,13 +113,19 @@ class LineSpliter:
                 for one_proc in self.process_work:
                     self.ProcessCellDie(one_proc)
                 self.process_work=[]
-                self.number=self.number+char
+                self.no_cn=self.no_cn+char
+            elif re.match("[a-zA-Z]",char):
+                for one_proc in self.process_work:
+                    self.ProcessCellDie(one_proc)
+                self.process_work=[]
+                self.number_found=False
+                self.no_cn=self.no_cn+char
             else:
-                read_number=self.number
-                self.number=''
-                if len(read_number)>0:
-                    found_word=FoundWord(read_number,self.index,None)
-                    found_word.is_number=True
+                read_no_cn=self.no_cn
+                self.no_cn=''
+                if len(read_no_cn)>0:
+                    found_word=FoundWord(read_no_cn,None)
+                    found_word.is_no_cn=True
                     self.found_word.append(found_word)
                     #self.process_work.append(self.search_root['n'])
 
@@ -140,11 +154,11 @@ class LineSpliter:
 
             self.process_work=next_round_process_word
 
-        if len(self.number)>0:
-            self.found_word.append(FoundWord(self.number,len(line),None))
+        if len(self.no_cn)>0:
+            self.found_word.append(FoundWord(self.no_cn,None))
         for one_proc in self.process_work:
             if one_proc.word_ref!=None:
-                self.found_word.append(FoundWord(one_proc.word_ref,len(line),one_proc))
+                self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
 
         self.CheckDoubleOverlap()
         self.CheckCantantPre()
@@ -154,10 +168,11 @@ class LineSpliter:
         return self.found_word
 
     def CheckDoubleOverlap(self):
+        #检查当前词语刚好前半部分是前一个词后半部分是后一个词 当前词删除
         start_pos=len(self.found_word)-2;
         while True:
             gorecheck=False
-            if len(self.found_word)>=3: #检查当前词语刚好前半部分是前一个词后半部分是后一个词 当前词删除
+            if len(self.found_word)>=3:
                 for index in range(start_pos,0,-1):
                     pre_word=self.found_word[index-1]
                     #if len(pre_word.word)==1:
@@ -189,7 +204,7 @@ class LineSpliter:
                     del self.found_word[index-1]
 
     def CheckAfterOverlap(self):
-        #后词包含前词的结尾的时候，重叠部分归后词
+        #后词包含前词的结尾的时候，重叠部分归出现概率大的词
         for index in range(len(self.found_word)-1,0,-1):
             aft_word=self.found_word[index]
             now_word=self.found_word[index-1]
@@ -198,17 +213,14 @@ class LineSpliter:
                 for i2 in range(1,len(aft_word.word)):
                     word_pice=aft_word.word[0:i2]
                     if now_word.word.endswith(word_pice):
-                        if now_word.tree_pos!=None:
-                            pre_pos=now_word.tree_pos.word_pre
-                            while pre_pos!=None and pre_pos.word_ref==None:
-                                pre_pos=pre_pos.word_pre
-                            if pre_pos!=None:
-                                now_word.word=pre_pos.word_ref
-                                now_word.tree_pos=pre_pos
-                                recheck=True
-                                break
+                        if aft_word.tree_pos.freq>=now_word.tree_pos.freq:
+                            new_word=now_word.word
+                            new_word=new_word[0:len(new_word)-i2]
+                            now_word.word=new_word
                         else:
-                            break
+                            new_word=aft_word.word[i2:]
+                            aft_word.word=new_word
+
                 if recheck==False:
                     break
 
@@ -241,4 +253,4 @@ for tp in text_list:
     spliter=LineSpliter(word_dict_root)
     words=spliter.ProcessLine(tp)
     for word in words:
-        print '》'*word.pos,word.word
+        print u">>%s"%(word.word,)
