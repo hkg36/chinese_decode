@@ -52,9 +52,9 @@ def GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     if oauth_code!=None:
         client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
         r = client.request_access_token(oauth_code)
-        client.set_access_token(r['access_token'], r['expires_in'])
+        #client.set_access_token(r['access_token'], r['expires_in'])
         #uid=string.atoi(r['uid'])
-    return client
+    return r
 
 if __name__ == '__main__':
 
@@ -64,7 +64,10 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
-    client=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+    oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+    client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
+    client.set_access_token(oauth['access_token'], oauth['expires_in'])
+
     public_time_line=client.statuses__public_timeline()
 
     statuses=public_time_line['statuses']

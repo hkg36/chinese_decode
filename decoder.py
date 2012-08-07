@@ -58,11 +58,12 @@ class WordTree(WordCell):
             #addedCell.word_type=word_type
 
 class FoundWord:
-    word=None
-    tree_pos=None
-    def __init__(self,str,treepos):
+    def __init__(self,str,pos,treepos):
         self.word=str
+        self.pos=pos-len(str)
         self.tree_pos=treepos
+    def __str__(self):
+        return self.word
 
 class LineSpliter:
     def __init__(self,search_root):
@@ -89,12 +90,12 @@ class LineSpliter:
     def ProcessCellDie(self,one_proc):
         one_proc=self.CheckProcessCell(one_proc)
         if one_proc!=None:
-            self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
+            self.found_word.append(FoundWord(one_proc.word_ref,self.index,one_proc))
 
     def CheckNoCnFound(self):
         if self.no_cn_fin:
             if len(self.no_cn)>0:
-                found_word=FoundWord(self.no_cn,None)
+                found_word=FoundWord(self.no_cn,self.index,None)
                 found_word.is_no_cn=True
                 self.found_word.append(found_word)
             self.no_cn=''
@@ -123,7 +124,7 @@ class LineSpliter:
                         need_create_new_process=True
                 else:
                     self.ProcessCellDie(one_proc)
-                    self.CheckNoCnFound()
+                self.CheckNoCnFound()
 
             if has_one_success==False:
                 if self.search_root.has_key(char):
@@ -134,17 +135,17 @@ class LineSpliter:
 
             self.process_work=next_round_process_word
 
-        if len(self.no_cn)>0:
-            self.found_word.append(FoundWord(self.no_cn,None))
+        self.CheckNoCnFound()
         for one_proc in self.process_work:
             if one_proc.word_ref!=None:
-                self.found_word.append(FoundWord(one_proc.word_ref,one_proc))
+                self.found_word.append(FoundWord(one_proc.word_ref,len(line),one_proc))
 
         #self.CheckDoubleOverlap()
 
-        self.CheckTail()
         self.CheckCantantPre()
+        self.CheckTail()
         self.CheckAfterOverlap()
+        self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
         self.CheckCantantPre()
         self.CheckTail()
 
@@ -196,8 +197,8 @@ class LineSpliter:
                 for i2 in range(1,len(aft_word.word)):
                     word_pice=aft_word.word[0:i2]
                     if now_word.word.endswith(word_pice):
-                        if aft_word.tree_pos==None or now_word.tree_pos==None or \
-                            aft_word.tree_pos.freq>=now_word.tree_pos.freq :
+                        if aft_word.tree_pos==None or now_word.tree_pos==None or now_word.tree_pos.freq==0 or \
+                            aft_word.tree_pos.freq/now_word.tree_pos.freq>2:
                             #字归后词 裁剪前词
                             new_word=now_word.word
                             new_word=new_word[0:len(new_word)-i2]
@@ -225,10 +226,10 @@ class LineSpliter:
 
 if __name__ == '__main__':
     word_dict_root=WordTree()
-    """fp=open('chinese_data.txt','r') ##网友整理
+    fp=open('chinese_data.txt','r') ##网友整理
     all_line=fp.readlines()
     fp.close()
-    word_dict_root.BuildFindTree(all_line)"""
+    word_dict_root.BuildFindTree(all_line)
     fp=open('word3.txt','r')## 来自国家语言委员会
     all_line=fp.readlines()
     fp.close()
@@ -238,7 +239,7 @@ if __name__ == '__main__':
     fp.close()
     word_dict_root.LoadSogouData(all_line)
 
-    full_text=u"你以为那短信我看不懂"
+    full_text=u"是不是以后可以按照地区来一个白云山版"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:

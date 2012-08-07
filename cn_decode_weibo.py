@@ -1,6 +1,9 @@
 #-*-coding:utf-8-*-
 from decoder import *
 from weibo_autooauth import *
+import sqlite3
+import string
+import time
 
 if __name__ == '__main__':
 
@@ -24,7 +27,25 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
-    client=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+    db=sqlite3.connect("data/weibo_word_base.db")
+    try:
+        db.execute("create table weibo_oauth(app_key varchar(32),user_name varchar(32),weibo_id int,key varchar(30) not null,expires_time int not null,PRIMARY KEY(app_key,user_name))")
+    except Exception,e:
+        print e
+
+    client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
+    dbc=db.cursor()
+    dbc.execute("select weibo_id,key from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()+3600))
+    if dbc.rowcount>=1:
+        dbrow=dbc.fetchone()
+        client.set_access_token()
+    oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+    expires_time=time.time()+oauth['expires_in']
+    dbc=db.cursor()
+    dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],expires_time))
+    db.commit()
+
+    client.set_access_token(oauth['access_token'], oauth['expires_in'])
     public_time_line=client.statuses__public_timeline()
 
     statuses=public_time_line['statuses']
@@ -45,4 +66,6 @@ if __name__ == '__main__':
                     types=word_dict_root.word_type[word.word]
                 else:
                     types=None
-                print u">>%s %s"%(word.word,str(types))
+                print u"%s%s %s"%(u"》"*word.pos,word.word,str(types))
+
+    db.close()
