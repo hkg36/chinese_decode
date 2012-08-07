@@ -4,6 +4,7 @@ import copy
 import json
 import pickle
 import string
+import codecs
 
 class WordCell(dict):
     word_ref=None
@@ -240,6 +241,9 @@ if __name__ == '__main__':
     word_dict_root.LoadSogouData(all_line)
 
     full_text=u"是不是以后可以按照地区来一个白云山版"
+    fp=codecs.open('testdata.txt','r','utf-8')
+    full_text=fp.read()
+    fp.close()
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:
