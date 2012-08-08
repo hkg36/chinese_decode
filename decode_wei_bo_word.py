@@ -1,7 +1,10 @@
 #-*-coding:utf-8-*-
 from decoder import *
 import sqlite3
-import ujson as json
+try:
+    import ujson as json
+except :
+    import json
 import string
 
 if __name__ == '__main__':
@@ -70,16 +73,15 @@ if __name__ == '__main__':
         print e
     for word in word_dict:
         add_info=word_dict[word]
-
         dbc=dbtext.cursor()
         dbc.execute("select json_info from weibo_word where word=?",(word,))
         resrow=dbc.fetchone()
         if resrow!=None:
-            json_info=ujson.loads(resrow[0])
+            json_info=json.loads(resrow[0])
 
             for weibo_id in add_info:
-                word_data=add_info[weibo_id]
-                if weibo_id in json_info:
-                    json_info[weibo_id]=json_info[weibo_id]+word_data
+                json_info[str(weibo_id)]=add_info[weibo_id]
         else:
             json_info=add_info
+        dbc.execute("replace into weibo_word(word,json_info) values(?,?)",(word,json.dumps(json_info)))
+    dbtext.commit()

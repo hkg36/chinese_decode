@@ -2,7 +2,10 @@ import weibo_api
 import urllib2
 import urllib
 import re
-import ujson as json
+try:
+    import ujson as json
+except :
+    import json
 from http_tool_box import *
 
 def GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
