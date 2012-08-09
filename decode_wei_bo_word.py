@@ -68,20 +68,12 @@ if __name__ == '__main__':
 
     dbtext=sqlite3.connect("data/fulltext.db")
     try:
-        dbtext.execute("create table weibo_word(word varchar(32) not null PRIMARY KEY,json_info text not null)")
+        dbtext.execute("create table weibo_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
     except Exception,e:
         print e
+    dbc=dbtext.cursor()
     for word in word_dict:
         add_info=word_dict[word]
-        dbc=dbtext.cursor()
-        dbc.execute("select json_info from weibo_word where word=?",(word,))
-        resrow=dbc.fetchone()
-        if resrow!=None:
-            json_info=json.loads(resrow[0])
-
-            for weibo_id in add_info:
-                json_info[str(weibo_id)]=add_info[weibo_id]
-        else:
-            json_info=add_info
-        dbc.execute("replace into weibo_word(word,json_info) values(?,?)",(word,json.dumps(json_info)))
+        for weibo_id in add_info:
+            dbc.execute('replace into weibo_word(word,weibo_id,times) values(?,?,?)',(word,weibo_id,add_info[weibo_id]))
     dbtext.commit()

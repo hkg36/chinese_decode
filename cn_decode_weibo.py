@@ -14,51 +14,74 @@ def ReadUserWeibo(uid,client):
     if dbrow!=None:
         since_id=dbrow[0]
 
+    all_time_line_statuses=[]
     try:
-        public_time_line=client.statuses__user_timeline(uid=uid,since_id=since_id,count=200)
+        for page in range(1,30):
+            public_time_line=client.statuses__home_timeline(page=page,since_id=since_id,count=200,filter_by_author=1)
+            if public_time_line.has_key('statuses'):
+                statuses=public_time_line['statuses']
+                if len(statuses)>0:
+                    all_time_line_statuses.append(statuses)
+                else:
+                    break
+            else:
+                break
     except Exception,e:
         print e
         return
 
-    if public_time_line.has_key('statuses'):
-        statuses=public_time_line['statuses']
-    else:
-        statuses=[]
-    if len(statuses)>0:
-        last_one = statuses[0]
-        dbc=db.cursor()
-        dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(uid,last_one['id']))
+
+    if len(all_time_line_statuses)>0:
+        first_page=all_time_line_statuses[0]
+        if len(first_page)>0:
+            last_one = first_page[0]
+            dbc=db.cursor()
+            dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(uid,last_one['id']))
 
     dbc=db.cursor()
-    for one in statuses:
-        comments_count=one['comments_count']
-        dbc.execute("insert into weibo_text(weibo_id,word) values(?,?)",(one['id'],one['text']))
-        dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
-        if comments_count>0:
-            dbc.execute("select last_comment_id from weibo_commentlast where weibo_id=?",(one['id'],))
-            dbrow=dbc.fetchone()
-            since_id=0
-            if dbrow!=None:
-                since_id=dbrow[0]
+    for statuses in all_time_line_statuses:
+        for one in statuses:
+            user=one['user']
+            if user['id']==uid:
+                continue
 
-            try:
-                weibores=client.comments__show(id=one['id'],since_id=since_id,count=200)
-                if weibores.has_key('comments'):
-                    comments=weibores['comments']
-                else:
-                    comments=[]
-                if len(comments)>0:
-                    last_one_comment=comments[0]
-                    dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],last_one_comment['id']))
-                for onec in comments:
-                    print onec['text']
-                    print onec['id']
-                    dbc.execute("insert into weibo_comment(weibo_id,comment_weibo_id,word) values(?,?,?)",(onec['id'],one['id'],onec['text']))
-            except Exception,e:
-                print e
-        else:
-            dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
-        db.commit()
+            dbc.execute("insert or ignore into weibo_text(weibo_id,word) values(?,?)",(one['id'],one['text']))
+            dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
+
+    for statuses in all_time_line_statuses:
+        for one in statuses:
+            user=one['user']
+            if user['id']==uid:
+                continue
+            comments_count=one['comments_count']
+
+            if comments_count>0:
+                dbc.execute("select last_comment_id from weibo_commentlast where weibo_id=?",(one['id'],))
+                dbrow=dbc.fetchone()
+                since_id=0
+                if dbrow!=None:
+                    since_id=dbrow[0]
+
+                try:
+                    weibores=client.comments__show(id=one['id'],since_id=since_id,count=200)
+                    if weibores.has_key('comments'):
+                        comments=weibores['comments']
+                    else:
+                        comments=[]
+                    if len(comments)>0:
+                        last_one_comment=comments[0]
+                        dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],last_one_comment['id']))
+                    for onec in comments:
+                        print onec['text']
+                        print onec['id']
+                        dbc.execute("insert or ignore into weibo_comment(weibo_id,comment_weibo_id,word) values(?,?,?)",(onec['id'],one['id'],onec['text']))
+                except Exception,e:
+                    print e
+                    db.commit()
+                    return
+            else:
+                dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
+            db.commit()
     db.commit()
     db.close()
 
@@ -71,13 +94,15 @@ def RecheckComment(client):
     #dbc.execute("select weibo_id,last_comment_id from weibo_commentlast where CreatedTime<?",(befor_time,))
     dbc.execute("select weibo_id,last_comment_id,CreatedTime from weibo_commentlast")
     processed_count=0
-    for resrow in dbc:
+    all_line=dbc.fetchall()
+    for resrow in all_line:
+        now=time.time()
         res_time=time.mktime(time.strptime(resrow[2],"%Y-%m-%d %X"))
-        if processed_count>100:
+        if processed_count>1000:
             break
-        if time.time()-res_time>60*60*48:
+        if now-res_time>60*60*48:
             continue
-        if time.time()-res_time>3*60:
+        if now-res_time>3*60:
             weibo_id=resrow[0]
             last_comment_id=resrow[1]
 
@@ -139,16 +164,16 @@ if __name__ == '__main__':
     dbrow=dbc.fetchone()
     if dbrow!=None:
         client.set_access_token(dbrow[1],dbrow[2])
+        my_weibo_id=dbrow[0]
     else:
         oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
         dbc=db.cursor()
         dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
         db.commit()
         client.set_access_token(oauth['access_token'], oauth['expires_in'])
+        my_weibo_id=oauth['uid']
     db.close()
 
-    uid=[2766066821,2778063742,2787229190,2203797085,2143649153,2482527830,1693658273,1712334485,2706392963,1462615901]
-    for one in uid:
-        ReadUserWeibo(one,client)
+    ReadUserWeibo(my_weibo_id,client)
 
     RecheckComment(client)

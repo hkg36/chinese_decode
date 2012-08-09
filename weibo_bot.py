@@ -51,8 +51,11 @@ if __name__ == '__main__':
         dbc.execute("create table last_proc_comment(weibo_id int not null PRIMARY KEY,last_comment int not null)")
     except Exception,e:
         print e
+
+    full_text_db=sqlite3.connect("data/fulltext.db")
+    ftc=full_text_db.cursor()
+
     wres=client.comments__to_me(count=100)
-    print json.dumps(wres)
     comments=wres['comments']
 
     for line in comments:
@@ -89,3 +92,19 @@ if __name__ == '__main__':
                         else:
                             word_record[word.word]=1
 
+        weibo_id_count={}
+        for key in word_record:
+            ftc.execute("select weibo_id,sum(times) from weibo_word where word=? group by weibo_id",(key,))
+            for resline in ftc:
+                if resline[0] in weibo_id_count:
+                    weibo_id_count[resline[0]]+=resline[1];
+                else:
+                    weibo_id_count[resline[0]]=resline[1];
+
+        weibo_id_count_list=[]
+        for key in weibo_id_count:
+            weibo_id_count_list.append({'k':key,'v':weibo_id_count[key]})
+        weibo_id_count_list.sort(lambda a,b:-cmp(a['v'],b['v']))
+
+        print json.dumps(weibo_id_count_list)
+        break
