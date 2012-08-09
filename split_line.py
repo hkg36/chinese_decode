@@ -1,5 +1,4 @@
 #-*-coding:utf-8-*-
 import re
 import ujson
-
-print range(1,2)
+print re.search(u"[a-zA-z]+://[^\s]*",u"荤菜一道 http://t.cn/zW6mLur",re.I)

@@ -73,8 +73,10 @@ def RecheckComment(client):
     processed_count=0
     for resrow in dbc:
         res_time=time.mktime(time.strptime(resrow[2],"%Y-%m-%d %X"))
-        if processed_count>30:
+        if processed_count>100:
             break
+        if time.time()-res_time>60*60*48:
+            continue
         if time.time()-res_time>3*60:
             weibo_id=resrow[0]
             last_comment_id=resrow[1]
@@ -102,20 +104,6 @@ def RecheckComment(client):
     db.commit()
 
 if __name__ == '__main__':
-
-    """word_dict_root=WordTree()
-    fp=open('chinese_data.txt','r') ##网友整理
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('word3.txt','r')## 来自国家语言委员会
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.LoadSogouData(all_line)"""
 
     APP_KEY = '685427335'
     APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
@@ -159,7 +147,7 @@ if __name__ == '__main__':
         client.set_access_token(oauth['access_token'], oauth['expires_in'])
     db.close()
 
-    uid=[2766066821,2778063742,2787229190,2203797085,2143649153,2482527830]
+    uid=[2766066821,2778063742,2787229190,2203797085,2143649153,2482527830,1693658273,1712334485,2706392963,1462615901]
     for one in uid:
         ReadUserWeibo(one,client)
 
