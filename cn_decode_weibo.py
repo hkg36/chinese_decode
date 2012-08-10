@@ -145,4 +145,5 @@ if __name__ == '__main__':
         ReadUserWeibo(my_weibo_id,client)
 
         RecheckComment(client)
+        print 'go sleep'
         time.sleep(60*5)
