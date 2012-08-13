@@ -71,7 +71,7 @@ def RecheckComment(client):
             last_comment_id=resrow[1]
 
             try:
-                weibores=client.comments__show(id=weibo_id,since_id=last_comment_id)
+                weibores=client.comments__show(id=weibo_id,since_id=last_comment_id,count=200)
                 if weibores.has_key('comments'):
                     comments=weibores['comments']
                 else:
@@ -88,7 +88,7 @@ def RecheckComment(client):
                     reply_comment_id=0
                     if 'reply_comment' in onec:
                         reply_comment_id=onec['reply_comment']['id']
-                    dbc.execute("insert into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,user['id'],reply_comment_id,onec['text']))
+                    dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,user['id'],reply_comment_id,onec['text']))
             except Exception,e:
                 print e
                 db.commit()

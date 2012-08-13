@@ -56,7 +56,6 @@ class WordTree(WordCell):
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
             self.word_type[word]=word_type
-            #addedCell.word_type=word_type
 
 class FoundWord:
     def __init__(self,str,pos,treepos):
@@ -69,7 +68,7 @@ class FoundWord:
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
-        for char in u"0123456789%.一二三四五六七八九十百千万亿几某多":
+        for char in u"0123456789%.一二三四五六七八九十百千万亿几某多单双":
             self.number_set.add(char)
         self.no_cn=''
         self.process_work=[]
@@ -240,7 +239,7 @@ if __name__ == '__main__':
     fp.close()
     word_dict_root.LoadSogouData(all_line)
 
-    full_text=u"是不是以后可以按照地区来一个白云山版"
+    #full_text=u"是不是以后可以按照地区来一个白云山版"
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
