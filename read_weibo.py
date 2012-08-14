@@ -44,7 +44,7 @@ def ReadUserWeibo(uid,client):
             user=one['user']
             if user['id']==uid:
                 continue
-
+            print "}}}",one['text']
             dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],user['id'],one['text']))
             dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
 

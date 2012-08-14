@@ -5,6 +5,7 @@ import json
 import pickle
 import string
 import codecs
+import math
 
 class WordCell(dict):
     word_ref=None
@@ -13,6 +14,7 @@ class WordCell(dict):
 
 class WordTree(WordCell):
     word_type={}
+    word_weight={}
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()
@@ -56,6 +58,7 @@ class WordTree(WordCell):
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
             self.word_type[word]=word_type
+            self.word_weight[word]=freq**(1.0/3)
 
 class FoundWord:
     def __init__(self,str,pos,treepos):

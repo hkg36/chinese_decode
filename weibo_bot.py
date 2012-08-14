@@ -100,20 +100,23 @@ if __name__ == '__main__':
             for word in words:
                 if word.word in word_dict_root.word_type:
                     word_type=word_dict_root.word_type[word.word]
-                    if u'N' in word_type or u'V' in word_type:
-                        if word.word in word_record:
-                            word_record[word.word]=word_record[word.word]+1
-                        else:
-                            word_record[word.word]=1
+                    if word.word in word_record:
+                        word_record[word.word]=word_record[word.word]+1
+                    else:
+                        word_record[word.word]=1
         #原帖和问题的匹配
         weibo_id_count={}
         for key in word_record:
+            if key in word_dict_root.word_weight:
+                weight=1.0/word_dict_root.word_weight[key]
+            else:
+                weight=1.0
             ftc.execute("select weibo_id,times from weibo_word where word=?",(key,))
             for resline in ftc:
                 if resline[0] in weibo_id_count:
-                    weibo_id_count[resline[0]]+=resline[1];
+                    weibo_id_count[resline[0]]+=resline[1]*weight;
                 else:
-                    weibo_id_count[resline[0]]=resline[1];
+                    weibo_id_count[resline[0]]=resline[1]*weight;
 
         weibo_reply_list=[]
         if len(weibo_id_count)>0:
@@ -135,12 +138,16 @@ if __name__ == '__main__':
         #回帖中的对话
         weibo_id_count={}
         for key in word_record:
+            if key in word_dict_root.word_weight:
+                weight=1.0/word_dict_root.word_weight[key]
+            else:
+                weight=1.0
             ftc.execute("select weibo_id,times from weibo_comment_word where word=?",(key,))
             for resline in ftc:
                 if resline[0] in weibo_id_count:
-                    weibo_id_count[resline[0]]+=resline[1];
+                    weibo_id_count[resline[0]]+=resline[1]*weight;
                 else:
-                    weibo_id_count[resline[0]]=resline[1];
+                    weibo_id_count[resline[0]]=resline[1]*weight;
         if len(weibo_id_count)>0:
             weibo_id_count_list=[]
             for key in weibo_id_count:
