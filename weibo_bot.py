@@ -110,7 +110,7 @@ if __name__ == '__main__':
             if key in word_dict_root.word_weight:
                 weight=1.0/word_dict_root.word_weight[key]
             else:
-                weight=1.0
+                continue
             ftc.execute("select weibo_id,times from weibo_word where word=?",(key,))
             for resline in ftc:
                 if resline[0] in weibo_id_count:
@@ -141,7 +141,7 @@ if __name__ == '__main__':
             if key in word_dict_root.word_weight:
                 weight=1.0/word_dict_root.word_weight[key]
             else:
-                weight=1.0
+                continue
             ftc.execute("select weibo_id,times from weibo_comment_word where word=?",(key,))
             for resline in ftc:
                 if resline[0] in weibo_id_count:

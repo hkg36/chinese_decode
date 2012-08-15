@@ -4,6 +4,7 @@ from weibo_autooauth import *
 import sqlite3
 import string
 import time
+from STTrans import STTrans
 
 def ReadUserWeibo(uid,client):
     db=sqlite3.connect("data/weibo_word_base.db")
@@ -45,7 +46,8 @@ def ReadUserWeibo(uid,client):
             if user['id']==uid:
                 continue
             print "}}}",one['text']
-            dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],user['id'],one['text']))
+            text=STTrans.getInstanse().TransT2S(one['text'])
+            dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],user['id'],text))
             dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
 
     db.commit()
@@ -88,7 +90,8 @@ def RecheckComment(client):
                     reply_comment_id=0
                     if 'reply_comment' in onec:
                         reply_comment_id=onec['reply_comment']['id']
-                    dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,user['id'],reply_comment_id,onec['text']))
+                    text=STTrans.getInstanse().TransT2S(onec['text'])
+                    dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,user['id'],reply_comment_id,text))
             except Exception,e:
                 print e
                 db.commit()
@@ -146,4 +149,4 @@ if __name__ == '__main__':
 
         RecheckComment(client)
         print 'go sleep'
-        time.sleep(60*5)
+        time.sleep(60*3)

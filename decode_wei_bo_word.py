@@ -6,6 +6,7 @@ try:
 except :
     import json
 import string
+import os
 
 def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
     weibo_word=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",weibo_word)
@@ -62,6 +63,7 @@ if __name__ == '__main__':
     dbc=db.cursor()
     dbc.execute("select weibo_id,word from weibo_text")
 
+    os.remove("data/fulltext.db")
     dbtext=sqlite3.connect("data/fulltext.db")
     try:
         dbtext.execute("create table weibo_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
