@@ -1,12 +1,13 @@
 #-*-coding:utf-8-*-
-from decoder import *
 from weibo_autooauth import *
 import sqlite3
-import string
 import time
 from STTrans import STTrans
 
+fetch_time=0
 def ReadUserWeibo(uid,client):
+    global fetch_time
+
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()
     dbc.execute("select last_weibo_id from weibo_lastweibo where user_id=?",(uid,))
@@ -14,6 +15,10 @@ def ReadUserWeibo(uid,client):
     since_id=0
     if dbrow!=None:
         since_id=dbrow[0]
+    if fetch_time%200==0:
+        since_id=0
+
+    fetch_time+=1
 
     all_time_line_statuses=[]
     try:
