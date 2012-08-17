@@ -128,8 +128,6 @@ class HttpObject(object):
 
     def __getattr__(self, attr):
         def wrap(**kw):
-            if self.client.is_expires():
-                raise APIError('21327', 'expired_token', attr)
             return _http_call('%s%s.json' % (self.client.api_url, attr.replace('__', '/')), self.method, self.client.access_token, **kw)
         return wrap
 

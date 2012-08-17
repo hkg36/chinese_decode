@@ -133,23 +133,25 @@ if __name__ == '__main__':
     except Exception,e:
         print e
 
-    client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
-    dbc=db.cursor()
-    dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()+3600))
-    dbrow=dbc.fetchone()
-    if dbrow!=None:
-        client.set_access_token(dbrow[1],dbrow[2])
-        my_weibo_id=dbrow[0]
-    else:
-        oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-        dbc=db.cursor()
-        dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
-        db.commit()
-        client.set_access_token(oauth['access_token'], oauth['expires_in'])
-        my_weibo_id=oauth['uid']
-    db.close()
+
 
     while True:
+        client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
+        dbc=db.cursor()
+        dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()+3600))
+        dbrow=dbc.fetchone()
+        if dbrow!=None:
+            client.set_access_token(dbrow[1],dbrow[2])
+            my_weibo_id=dbrow[0]
+        else:
+            oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+            dbc=db.cursor()
+            dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
+            db.commit()
+            client.set_access_token(oauth['access_token'], oauth['expires_in'])
+            my_weibo_id=oauth['uid']
+        db.close()
+
         ReadUserWeibo(my_weibo_id,client)
 
         RecheckComment(client)
