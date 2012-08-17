@@ -132,10 +132,10 @@ if __name__ == '__main__':
         db.execute("create table weibo_comment(weibo_id int not null PRIMARY KEY,uid int not null,comment_weibo_id int not null references weibo_text(weibo_id) on update cascade,reply_id int,word varchar(1024) not null)")
     except Exception,e:
         print e
-
-
+    db.close()
 
     while True:
+        db=sqlite3.connect("data/weibo_word_base.db")
         client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
         dbc=db.cursor()
         dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()+3600))

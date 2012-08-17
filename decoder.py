@@ -58,7 +58,7 @@ class WordTree(WordCell):
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
             self.word_type[word]=word_type
-            self.word_weight[word]=freq**(1.0/3)
+            self.word_weight[word]=freq**(1.0/2)
 
 class FoundWord:
     def __init__(self,str,pos,treepos):

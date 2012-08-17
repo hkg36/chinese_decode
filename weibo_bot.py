@@ -9,8 +9,10 @@ try:
     import ujson as json
 except :
     import json
-def FindReplyForSentence(word_dict_root,full_text_db,weibo_db,word):
-    ftc=full_text_db.cursor()
+def FindWordCount(word_dict_root,ftc,word):
+    """
+    分解句子并统计词语出现次数
+    """
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",word)
     text_list=[]
     for tp in text_pice:
@@ -29,37 +31,17 @@ def FindReplyForSentence(word_dict_root,full_text_db,weibo_db,word):
                     word_record[word.word]=word_record[word.word]+1
                 else:
                     word_record[word.word]=1
-        #原帖和问题的匹配
-    weibo_id_count={}
-    for key in word_record:
-        if key in word_dict_root.word_weight:
-            weight=1.0/word_dict_root.word_weight[key]
-        else:
-            continue
-        ftc.execute("select weibo_id,times from weibo_word where word=?",(key,))
-        for resline in ftc:
-            if resline[0] in weibo_id_count:
-                weibo_id_count[resline[0]]+=resline[1]*weight;
-            else:
-                weibo_id_count[resline[0]]=resline[1]*weight;
+    return word_record
+def RemoveWeiboRubbish(word):
+    word=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",word)
+    word=re.sub(u"\w{0,4}://[\w\d./]*","",word,0,re.I)
+    return word
+
+def FindReplyForSentence(word_dict_root,full_text_db,weibo_db,word):
+    ftc=full_text_db.cursor()
+    word_record=FindWordCount(word_dict_root,ftc,word)
 
     weibo_reply_list=[]
-    if len(weibo_id_count)>0:
-        weibo_id_count_list=[]
-        for key in weibo_id_count:
-            weibo_id_count_list.append({'k':key,'v':weibo_id_count[key]})
-        weibo_id_count_list.sort(lambda a,b:-cmp(a['v'],b['v']))
-
-        dbc=weibo_db.cursor()
-
-        for one_pair in weibo_id_count_list:
-            dbc.execute("select word from weibo_comment where comment_weibo_id=? and reply_id=0",(one_pair['k'],))
-            for resrow in dbc:
-                weibo_reply=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",resrow[0])
-                weibo_reply=re.sub(u"\w{0,4}://[\w\d./]*","",weibo_reply,0,re.I)
-                weibo_reply_list.append(weibo_reply)
-            break
-
     #回帖中的对话
     weibo_id_count={}
     for key in word_record:
@@ -84,10 +66,40 @@ def FindReplyForSentence(word_dict_root,full_text_db,weibo_db,word):
         for one_pair in weibo_id_count_list:
             dbc.execute("select word from weibo_comment where reply_id=?",(one_pair['k'],))
             for resrow in dbc:
-                weibo_reply=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",resrow[0])
-                weibo_reply=re.sub(u"\w{0,4}://[\w\d./]*","",weibo_reply,0,re.I)
-                weibo_reply_list.append(weibo_reply)
+                weibo_reply_list.append(RemoveWeiboRubbish(resrow[0]))
             break
+
+    if len(weibo_reply_list)==0:
+        #原帖回复太多，精确性太差
+        #原帖和问题的匹配
+        weibo_id_count={}
+        for key in word_record:
+            if key in word_dict_root.word_weight:
+                weight=1.0/word_dict_root.word_weight[key]
+            else:
+                continue
+            ftc.execute("select weibo_id,times from weibo_word where word=?",(key,))
+            for resline in ftc:
+                if resline[0] in weibo_id_count:
+                    weibo_id_count[resline[0]]+=resline[1]*weight;
+                else:
+                    weibo_id_count[resline[0]]=resline[1]*weight;
+
+
+        if len(weibo_id_count)>0:
+            weibo_id_count_list=[]
+            for key in weibo_id_count:
+                weibo_id_count_list.append({'k':key,'v':weibo_id_count[key]})
+            weibo_id_count_list.sort(lambda a,b:-cmp(a['v'],b['v']))
+
+            dbc=weibo_db.cursor()
+
+            for one_pair in weibo_id_count_list:
+                dbc.execute("select word from weibo_comment where comment_weibo_id=? and reply_id=0",(one_pair['k'],))
+                for resrow in dbc:
+                    weibo_reply_list.append(RemoveWeiboRubbish(resrow[0]))
+                break
+
     return weibo_reply_list
 
 if __name__ == '__main__':
@@ -149,9 +161,10 @@ if __name__ == '__main__':
         comments=wres['comments']
         if len(comments)>0:
             last_comment=comments[0]
-            dbc=dbbot.cursor()
-            dbc.execute("replace into last_proc_comment(user_name,last_comment) values(?,?)",(user_name,last_comment['id']))
-            dbbot.commit()
+            if debug_mode==0:
+                dbc=dbbot.cursor()
+                dbc.execute("replace into last_proc_comment(user_name,last_comment) values(?,?)",(user_name,last_comment['id']))
+                dbbot.commit()
     else:
         comments=[]
 
@@ -171,8 +184,12 @@ if __name__ == '__main__':
 
         if len(weibo_reply_list)>0:
             print weibo_word
-            weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
-            print '>>',weibo_reply
+            if debug_mode==0:
+                weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
+                print '>>',weibo_reply
+            else:
+                for wr in weibo_reply_list:
+                    print '>>',wr
             try:
                 if debug_mode==0:
                     wbres=client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
