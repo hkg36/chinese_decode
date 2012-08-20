@@ -6,7 +6,7 @@ from decoder import *
 import random
 import urllib2
 from weibo_bot import *
-import json_connect
+import http_tool_box
 
 try:
     import ujson as json
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                         uid=bot_ids[random.randint(0,len(bot_ids)-1)]
                         ret.append({'user_id':uid,'invite_id':invite_id,'word':weibo_reply})
                 if len(ret)>0:
-                    httpres=json_connect.json_request('http://livep.sinaapp.com/dataimport/fakeaddinvitetalk.php',{'talklist':ret})
+                    httpres=http_tool_box.json_request('http://livep.sinaapp.com/dataimport/fakeaddinvitetalk.php',{'talklist':ret})
                     print httpres
         except Exception,e:
             print e

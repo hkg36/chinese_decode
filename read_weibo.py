@@ -18,8 +18,6 @@ def ReadUserWeibo(uid,client):
     if fetch_time%200==0:
         since_id=0
 
-    fetch_time+=1
-
     all_time_line_statuses=[]
     try:
         for page in range(1,10):
@@ -27,7 +25,7 @@ def ReadUserWeibo(uid,client):
             if public_time_line.has_key('statuses'):
                 statuses=public_time_line['statuses']
                 if len(statuses)>0:
-                    all_time_line_statuses.append(statuses)
+                    all_time_line_statuses.extend(statuses)
                 else:
                     break
             else:
@@ -38,25 +36,25 @@ def ReadUserWeibo(uid,client):
 
 
     if len(all_time_line_statuses)>0:
-        first_page=all_time_line_statuses[0]
-        if len(first_page)>0:
-            last_one = first_page[0]
-            dbc=db.cursor()
-            dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(uid,last_one['id']))
+        last_one = all_time_line_statuses[0]
+        dbc=db.cursor()
+        dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(uid,last_one['id']))
+        db.commit()
 
     dbc=db.cursor()
-    for statuses in all_time_line_statuses:
-        for one in statuses:
-            user=one['user']
-            if user['id']==uid:
-                continue
-            print "}}}",one['text']
-            text=STTrans.getInstanse().TransT2S(one['text'])
-            dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],user['id'],text))
-            dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
+    for one in all_time_line_statuses:
+        user=one['user']
+        if user['id']==uid:
+            continue
+        print "}}}",one['text']
+        text=STTrans.getInstanse().TransT2S(one['text'])
+        dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],user['id'],text))
+        dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
 
     db.commit()
     db.close()
+
+    fetch_time+=1
 
 def RecheckComment(client):
     #befor_time=time.time()-60*60*2
@@ -156,4 +154,4 @@ if __name__ == '__main__':
 
         RecheckComment(client)
         print 'go sleep'
-        time.sleep(60*3)
+        time.sleep(60*30)
