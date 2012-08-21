@@ -28,8 +28,7 @@ if __name__ == '__main__':
     fp.close()
     word_dict_root.LoadSogouData(all_line)
 
-    full_text_db=sqlite3.connect("data/fulltext.db")
-    db=sqlite3.connect("data/weibo_word_base.db")
+    searchdb=sqlite3.connect("data/dbforsearch.db")
 
     while True:
         try:
@@ -61,7 +60,7 @@ if __name__ == '__main__':
                         print 'pass bot'
                         continue
 
-                    weibo_reply_list=FindReplyForSentence(word_dict_root,full_text_db,db,user_word)
+                    weibo_reply_list=FindReplyForSentence(word_dict_root,searchdb,user_word)
 
                     if len(weibo_reply_list)>0:
                         print user_word

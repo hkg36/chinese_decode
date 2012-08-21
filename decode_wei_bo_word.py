@@ -73,6 +73,10 @@ if __name__ == '__main__':
         dbtext.execute("create table weibo_comment_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
     except Exception,e:
         print e
+    try:
+        dbtext.execute("create view all_word as select word,weibo_id,times from weibo_word union select word,weibo_id,times from weibo_comment_word")
+    except Exception,e:
+        print e
 
     word_dict={}
     for resrow in dbc:
@@ -102,5 +106,20 @@ if __name__ == '__main__':
         for weibo_id in add_info:
             dbc.execute('replace into weibo_comment_word(word,weibo_id,times) values(?,?,?)',(word,weibo_id,add_info[weibo_id]))
     dbtext.commit()
+
+    #dump db
+    try:
+        os.remove("data/dbforsearch.db")
+    except Exception,e:
+        print e
+    dbforsearch=sqlite3.connect("data/dbforsearch.db")
+    dbforsearch.execute("create table all_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
+    dbforsearch.execute("create table all_weibo(weibo_id int not null PRIMARY KEY,uid int not null,word varchar(1024) not null,reply_id int)")
+    dbforsearch.execute("ATTACH DATABASE 'data/weibo_word_base.db' as weibo_base")
+    dbforsearch.execute("ATTACH DATABASE 'data/fulltext.db' as word_base")
+    dbforsearch.execute("insert into all_weibo(weibo_id,uid,word,reply_id) select weibo_id,uid,word,reply_id from weibo_base.all_weibo")
+    dbforsearch.execute("insert into all_word(word,weibo_id,times) select word,weibo_id,times from word_base.all_word")
+    dbforsearch.commit()
+    dbforsearch.close()
 
 

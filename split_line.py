@@ -32,14 +32,24 @@ if __name__ == '__main__':
     txn.commit()
 
     d.associate(dindex,getName)
+
     """data=TestData()
-    data.id=5
+    data.id=6
     data.name="陈新"
     pd=pickle.dumps(data,pickle.HIGHEST_PROTOCOL)
-    d.put('test5',pd)"""
+    d.put('test6',pd)"""
     """pd= d.get('test5')
     data=pickle.loads(pd)"""
-    print dindex.pget("陈新")
 
+    cursor=dindex.cursor()
+    while True:
+        res = cursor.pget("陈新",bsddb3.db.DB_NEXT)
+        if res==None:
+            break
+        print res
+    cursor.close()
+
+    dbenv.txn_checkpoint()
+    dindex.close()
     d.close()
     dbenv.close()

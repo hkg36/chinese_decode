@@ -130,6 +130,11 @@ if __name__ == '__main__':
         db.execute("create table weibo_comment(weibo_id int not null PRIMARY KEY,uid int not null,comment_weibo_id int not null references weibo_text(weibo_id) on update cascade,reply_id int,word varchar(1024) not null)")
     except Exception,e:
         print e
+    try:
+        db.execute("create view all_weibo as select weibo_id,uid,comment_weibo_id as reply_id,word from weibo_comment where reply_id=0 union select weibo_id,uid,reply_id,word from weibo_comment where reply_id!=0 union select weibo_id,uid,0 as reply_id,word from weibo_text")
+    except Exception,e:
+        print e
+    db.commit()
     db.close()
 
     while True:
