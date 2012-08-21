@@ -74,4 +74,4 @@ if __name__ == '__main__':
                     print httpres
         except Exception,e:
             print e
-        time.sleep(60*5)
+        time.sleep(60*2)

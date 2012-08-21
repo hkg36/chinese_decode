@@ -20,7 +20,8 @@ if __name__ == '__main__':
         print e
     dbenv = bsddb3.db.DBEnv()
     dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
-                         bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN)
+                         bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
+                         bsddb3.db.DB_INIT_REP |bsddb3.db.DB_RECOVER)
     txn=dbenv.txn_begin()
     d = bsddb3.db.DB(dbenv)
     d.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666,txn)
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     cursor.close()
 
     dbenv.txn_checkpoint()
+    dbenv.log_archive(bsddb3.db.DB_ARCH_REMOVE)
     dindex.close()
     d.close()
     dbenv.close()
