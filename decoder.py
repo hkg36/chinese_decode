@@ -59,6 +59,17 @@ class WordTree(WordCell):
             addedCell.freq=freq
             self.word_type[word]=word_type
             self.word_weight[word]=freq**(1.0/2)
+    def LoadTextFreqBase(self,all_line):
+        line_reader=re.compile("^(?P<word>[^\s]*)\s+(?P<freq>\d*)\s+(?P<type>[^\s]*)",re.IGNORECASE)
+        for line in all_line:
+            re_res=line_reader.match(line)
+            word=re_res.group("word")
+            freq=string.atoi(re_res.group('freq'))
+            type=re_res.group('type')
+            addedCell=self.AddWordToTree(word)
+            addedCell.freq=freq
+            self.word_type[word]=type
+            self.word_weight[word]=freq**(1.0/2)
 
 class FoundWord:
     def __init__(self,str,pos,treepos):
@@ -229,18 +240,22 @@ class LineSpliter:
 
 if __name__ == '__main__':
     word_dict_root=WordTree()
-    fp=open('chinese_data.txt','r') ##网友整理
+    fp=open('dict/chinese_data.txt','r') ##网友整理
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
-    fp=open('word3.txt','r')## 来自国家语言委员会
+    """fp=open('word3.txt','r')## 来自国家语言委员会
     all_line=fp.readlines()
     fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
+    word_dict_root.BuildFindTree(all_line)"""
+    """fp=open('dict/SogouLabDic.dic','r') ##来自搜狗互联网数据库
     all_line=fp.readlines()
     fp.close()
-    word_dict_root.LoadSogouData(all_line)
+    word_dict_root.LoadSogouData(all_line)"""
+    fp=codecs.open('dict/text_freq_base.txt','r','utf-8')
+    all_line=fp.readlines()
+    fp.close()
+    word_dict_root.LoadTextFreqBase(all_line)
 
     #full_text=u"是不是以后可以按照地区来一个白云山版"
     fp=codecs.open('testdata.txt','r','utf-8')
