@@ -105,19 +105,7 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
 
 if __name__ == '__main__':
     debug_mode=0
-    word_dict_root=WordTree()
-    fp=open('chinese_data.txt','r') ##网友整理
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('word3.txt','r')## 来自国家语言委员会
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.LoadSogouData(all_line)
+    word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '685427335'
     APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'

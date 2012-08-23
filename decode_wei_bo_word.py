@@ -45,19 +45,7 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
 
 if __name__ == '__main__':
 
-    word_dict_root=WordTree()
-    fp=open('chinese_data.txt','r') ##网友整理
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('word3.txt','r')## 来自国家语言委员会
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    fp=open('SogouLabDic.dic','r') ##来自搜狗互联网数据库
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.LoadSogouData(all_line)
+    word_dict_root=LoadDefaultWordDic()
 
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()

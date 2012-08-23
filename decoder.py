@@ -74,65 +74,71 @@ class WordTree(WordCell):
 class FoundWord:
     def __init__(self,str,pos,treepos):
         self.word=str
-        self.pos=pos-len(str)
+        self.pos=pos
         self.tree_pos=treepos
     def __str__(self):
         return self.word
-
+class SearchWork:
+    def __init__(self,startpos,searchroot):
+        self.startpos=startpos
+        self.searchroot=searchroot
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
         for char in u"0123456789%.一二三四五六七八九十百千万亿几某多单双":
             self.number_set.add(char)
         self.no_cn=''
+        self.no_cn_start_pos=-1
         self.process_work=[]
         self.found_word=[]
         self.search_root=search_root
 
     def CheckProcessCell(self,one_proc):
-        if one_proc.word_ref!=None:
+        if one_proc.searchroot.word_ref!=None:
             return one_proc
         else: #无法找到词语的时候，回溯比当前位置短的最长词语
-            pre_index=0
-            while one_proc.word_pre!=None:
-                pre_index+=1
-                one_proc=one_proc.word_pre
-                if one_proc.word_ref!=None:
+            while one_proc.searchroot.word_pre!=None:
+                one_proc.searchroot=one_proc.searchroot.word_pre
+                if one_proc.searchroot.word_ref!=None:
                     return one_proc
         return None
 
     def ProcessCellDie(self,one_proc):
         one_proc=self.CheckProcessCell(one_proc)
         if one_proc!=None:
-            self.found_word.append(FoundWord(one_proc.word_ref,self.index,one_proc))
+            self.found_word.append(FoundWord(one_proc.searchroot.word_ref,one_proc.startpos,one_proc.searchroot))
 
     def CheckNoCnFound(self):
         if self.no_cn_fin:
             if len(self.no_cn)>0:
-                found_word=FoundWord(self.no_cn,self.index,None)
+                found_word=FoundWord(self.no_cn,self.no_cn_start_pos,None)
                 found_word.is_no_cn=True
                 self.found_word.append(found_word)
             self.no_cn=''
+            self.no_cn_start_pos=-1
 
     def ProcessLine(self,line):
-        for self.index in range(len(line)):
+        for index in range(len(line)):
             self.no_cn_fin=False
-            char=line[self.index]
+            char=line[index]
             if char in self.number_set or re.match("[a-zA-Z]",char):
+                if self.no_cn_start_pos==-1:
+                    self.no_cn_start_pos=index
                 self.no_cn=self.no_cn+char
             else:
                 self.no_cn_fin=True
 
             if len(self.process_work)==0:
-                self.process_work.append(self.search_root)
+                self.process_work.append(SearchWork(index,self.search_root))
             next_round_process_word=[]
             need_create_new_process=False
             has_one_success=False
             for one_proc in self.process_work:
-                if one_proc.has_key(char): #检查下一个字
+                if one_proc.searchroot.has_key(char): #检查下一个字
                     has_one_success=True
-                    next=one_proc[char]
-                    next_round_process_word.append(next)
+                    next=one_proc.searchroot[char]
+                    one_proc.searchroot=next
+                    next_round_process_word.append(one_proc)
                     if next.word_ref!=None:
                         #print next.word_ref
                         need_create_new_process=True
@@ -143,19 +149,17 @@ class LineSpliter:
             if has_one_success==False:
                 if self.search_root.has_key(char):
                     need_create_new_process=False
-                    next_round_process_word.append(self.search_root[char])
+                    next_round_process_word.append(SearchWork(index,self.search_root[char]))
             if need_create_new_process:
-                next_round_process_word.append(self.search_root)
+                next_round_process_word.append(SearchWork(index+1,self.search_root))
 
             self.process_work=next_round_process_word
 
         self.CheckNoCnFound()
         for one_proc in self.process_work:
-            if one_proc.word_ref!=None:
-                self.found_word.append(FoundWord(one_proc.word_ref,len(line),one_proc))
+            self.ProcessCellDie(one_proc)
 
-        #self.CheckDoubleOverlap()
-
+        self.CheckDoubleOverlap()
         self.CheckCantantPre()
         self.CheckTail()
         self.CheckAfterOverlap()
@@ -206,6 +210,8 @@ class LineSpliter:
         for index in range(len(self.found_word)-1,0,-1):
             aft_word=self.found_word[index]
             now_word=self.found_word[index-1]
+            if now_word.pos+len(now_word.word)<=aft_word.pos:
+                continue
             while True:
                 recheck=False
                 for i2 in range(1,len(aft_word.word)):
@@ -233,12 +239,11 @@ class LineSpliter:
             while index<(len(self.found_word)-1):
                 word=self.found_word[index]
                 word_aft=self.found_word[index+1]
-                if word.word.endswith(word_aft.word):
+                if word.pos<=word_aft.pos and (word.pos+len(word.word))>=(word_aft.pos+len(word_aft.word)):
                     del self.found_word[index+1]
                 else:
                     index+=1
-
-if __name__ == '__main__':
+def LoadDefaultWordDic():
     word_dict_root=WordTree()
     fp=open('dict/chinese_data.txt','r') ##网友整理
     all_line=fp.readlines()
@@ -256,11 +261,16 @@ if __name__ == '__main__':
     all_line=fp.readlines()
     fp.close()
     word_dict_root.LoadTextFreqBase(all_line)
+    print 'dict loaded'
+    return word_dict_root
 
-    #full_text=u"是不是以后可以按照地区来一个白云山版"
+if __name__ == '__main__':
+    word_dict_root=LoadDefaultWordDic()
+
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
+    #full_text=u"本次地震震中区海拔高度在5000米以上"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:

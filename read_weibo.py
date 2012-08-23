@@ -43,7 +43,7 @@ def ReadUserWeibo(uid,client):
 
     dbc=db.cursor()
     for one in all_time_line_statuses:
-        if one['uid']==uid:
+        if 'uid' not in one or one['uid']==uid:
             continue
         print "}}}",one['text']
         text=STTrans.getInstanse().TransT2S(one['text'])
