@@ -270,7 +270,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"本次地震震中区海拔高度在5000米以上"
+    #full_text=u"质量和服务"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:

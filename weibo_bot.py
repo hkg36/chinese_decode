@@ -129,6 +129,7 @@ if __name__ == '__main__':
     db.close()
 
     dbbot=sqlite3.connect("data/weibo_bot.db")
+
     dbc=dbbot.cursor()
     try:
         dbc.execute("create table last_proc_comment(user_name varchar(32) not null PRIMARY KEY,last_comment int not null)")
@@ -186,3 +187,4 @@ if __name__ == '__main__':
                 pass
             except Exception,e:
                 print e
+        time.sleep(random.randint(30,120))

@@ -67,12 +67,11 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
             dbc.execute("update weibo_commentlast set checktime=? where weibo_id=?",(now,weibo_id))
         for onec in comments:
             print onec['text']
-            user=onec['user']
             reply_comment_id=0
             if 'reply_comment' in onec:
                 reply_comment_id=onec['reply_comment']['id']
             text=STTrans.getInstanse().TransT2S(onec['text'])
-            dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,user['id'],reply_comment_id,text))
+            dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,onec['uid'],reply_comment_id,text))
 
 def RecheckComment(client):
     #befor_time=time.time()-60*60*2
@@ -103,9 +102,9 @@ def RecheckComment(client):
 
 if __name__ == '__main__':
 
-    APP_KEY = '685427335'
-    APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
-    CALLBACK_URL = 'http://www.hkg36.tk/weibo/authorization'
+    APP_KEY = '2117816058'
+    APP_SECRET = '80f6fac494eed2f4e8a54acb85683aea'
+    CALLBACK_URL = 'http://ljnh.sinaapp.com/controller/callback.php'
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
@@ -159,4 +158,4 @@ if __name__ == '__main__':
 
         RecheckComment(client)
         print 'go sleep'
-        time.sleep(60*5)
+        time.sleep(60*20)
