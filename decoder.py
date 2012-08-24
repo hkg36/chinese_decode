@@ -159,10 +159,11 @@ class LineSpliter:
         for one_proc in self.process_work:
             self.ProcessCellDie(one_proc)
 
-        self.CheckDoubleOverlap()
+
         self.CheckCantantPre()
         self.CheckTail()
         self.CheckAfterOverlap()
+        self.CheckDoubleOverlap()
         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
         self.CheckCantantPre()
         self.CheckTail()
@@ -171,23 +172,19 @@ class LineSpliter:
 
     def CheckDoubleOverlap(self):
         #检查当前词语刚好前半部分是前一个词后半部分是后一个词 当前词删除
-        start_pos=len(self.found_word)-2;
+        start_pos=1;
         while True:
             gorecheck=False
             if len(self.found_word)>=3:
-                for index in range(start_pos,0,-1):
+                for index in range(start_pos,len(self.found_word)-1):
                     pre_word=self.found_word[index-1]
-                    #if len(pre_word.word)==1:
-                    #    continue
                     aft_word=self.found_word[index+1]
-                    if len(aft_word.word)==1:
-                        continue
                     now_word=self.found_word[index]
 
                     for i2 in range(1,len(now_word.word)):
                         if pre_word.word.endswith(now_word.word[0:i2]):
                             if aft_word.word.startswith(now_word.word[i2:]):
-                                start_pos=min(start_pos+1,len(self.found_word)-3)
+                                start_pos=max(start_pos-1,1)
                                 gorecheck=True
                                 del self.found_word[index]
                                 break
@@ -226,6 +223,7 @@ class LineSpliter:
                         else:
                             new_word=aft_word.word[i2:]
                             aft_word.word=new_word
+                            aft_word.pos+=i2
 
                 if recheck==False:
                     break
@@ -270,7 +268,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"质量和服务"
+    #full_text=u"要广东一流水准"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:

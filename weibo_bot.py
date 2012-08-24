@@ -187,4 +187,3 @@ if __name__ == '__main__':
                 pass
             except Exception,e:
                 print e
-        time.sleep(random.randint(30,120))
