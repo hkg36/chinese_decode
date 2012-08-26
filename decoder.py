@@ -22,13 +22,9 @@ class WordTree(WordCell):
             self.AddWordToTree(line_text)
 
     def AddWordToTree(self,line_text):
-        startcell=None
-        if self.has_key(line_text[0]):
-            startcell=self[line_text[0]]
-        else:
-            startcell=WordCell()
-            self[line_text[0]]=startcell
-        for word in line_text[1:]:
+        startcell=self
+        for word in line_text:
+            word=ord(word)
             thiscell=None
             if startcell.has_key(word):
                 thiscell=startcell[word]
@@ -127,6 +123,7 @@ class LineSpliter:
                 self.no_cn=self.no_cn+char
             else:
                 self.no_cn_fin=True
+            char=ord(char)
 
             if len(self.process_work)==0:
                 self.process_work.append(SearchWork(index,self.search_root))
