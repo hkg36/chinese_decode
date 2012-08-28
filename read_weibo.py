@@ -158,4 +158,4 @@ if __name__ == '__main__':
 
         RecheckComment(client)
         print 'go sleep'
-        time.sleep(60*20)
+        time.sleep(60*10)
