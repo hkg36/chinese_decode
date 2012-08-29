@@ -1,4 +1,7 @@
+#-*-coding:utf-8-*-
 import weibo_api
+import sqlite3
+import time
 import urllib2
 import urllib
 import re
@@ -6,9 +9,7 @@ try:
     import ujson as json
 except :
     import json
-from http_tool_box import *
-
-def GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
+def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
         def http_error_302(self, req, fp, code, msg, headers):
             raise urllib2.HTTPError(req.get_full_url(),code,msg,headers,fp)
@@ -36,7 +37,7 @@ def GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         'Referer':url_1,
         'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language':'zh-cn,en-us;q=0.7,en;q=0.3',
-    }
+        }
     reqstring=urllib.urlencode(reqdata)
     request = urllib2.Request(url,reqstring,reqheader)
     res_location=None
@@ -58,21 +59,21 @@ def GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         #client.set_access_token(r['access_token'], r['expires_in'])
         #uid=string.atoi(r['uid'])
     return r
-
-if __name__ == '__main__':
-
-    APP_KEY = '685427335'
-    APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
-    CALLBACK_URL = 'http://www.hkg36.tk/weibo/authorization'
-    user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
-
-    oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
+    db=sqlite3.connect("data/weibo_word_base.db")
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
-    client.set_access_token(oauth['access_token'], oauth['expires_in'])
-
-    public_time_line=client.statuses__public_timeline()
-
-    statuses=public_time_line['statuses']
-    for one in statuses:
-        print one['text']
+    dbc=db.cursor()
+    dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()-3600))
+    dbrow=dbc.fetchone()
+    if dbrow!=None:
+        client.set_access_token(dbrow[1],dbrow[2])
+        client.user_id=dbrow[0]
+    else:
+        oauth=GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+        dbc=db.cursor()
+        dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
+        db.commit()
+        client.set_access_token(oauth['access_token'], oauth['expires_in'])
+        client.user_id=oauth['uid']
+    db.close()
+    return client

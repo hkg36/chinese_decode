@@ -1,7 +1,5 @@
 #-*-coding:utf-8-*-
-from weibo_autooauth import *
 import sqlite3
-import time
 import codecs
 import ujson as json
 

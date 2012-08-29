@@ -1,16 +1,16 @@
 #-*-coding:utf-8-*-
-from weibo_autooauth import *
+import weibo_tools
 import sqlite3
 import time
 from STTrans import STTrans
 
 fetch_time=0
-def ReadUserWeibo(uid,client):
+def ReadUserWeibo(client):
     global fetch_time
 
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()
-    dbc.execute("select last_weibo_id from weibo_lastweibo where user_id=?",(uid,))
+    dbc.execute("select last_weibo_id from weibo_lastweibo where user_id=?",(client.user_id,))
     dbrow=dbc.fetchone()
     since_id=0
     if dbrow!=None:
@@ -38,12 +38,12 @@ def ReadUserWeibo(uid,client):
     if len(all_time_line_statuses)>0:
         last_one = all_time_line_statuses[0]
         dbc=db.cursor()
-        dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(uid,last_one['id']))
+        dbc.execute("replace into weibo_lastweibo(user_id,last_weibo_id) values(?,?)",(client.user_id,last_one['id']))
         db.commit()
 
     dbc=db.cursor()
     for one in all_time_line_statuses:
-        if 'uid' not in one or one['uid']==uid:
+        if 'uid' not in one or one['uid']==client.user_id:
             continue
         print "}}}",one['text']
         text=STTrans.getInstanse().TransT2S(one['text'])
@@ -137,24 +137,8 @@ if __name__ == '__main__':
     db.close()
 
     while True:
-        db=sqlite3.connect("data/weibo_word_base.db")
-        client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
-        dbc=db.cursor()
-        dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()+3600))
-        dbrow=dbc.fetchone()
-        if dbrow!=None:
-            client.set_access_token(dbrow[1],dbrow[2])
-            my_weibo_id=dbrow[0]
-        else:
-            oauth=GetWeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-            dbc=db.cursor()
-            dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
-            db.commit()
-            client.set_access_token(oauth['access_token'], oauth['expires_in'])
-            my_weibo_id=oauth['uid']
-        db.close()
-
-        ReadUserWeibo(my_weibo_id,client)
+        client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+        ReadUserWeibo(client)
 
         RecheckComment(client)
         print 'go sleep'
