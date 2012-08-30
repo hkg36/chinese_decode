@@ -44,9 +44,27 @@ for s in s_list:
             POS_Set[w[1]]+=1
         else:
             POS_Set[w[1]]=1
+word_list_max={}
+for word in word_list:
+    POS_Set=word_list[word]
+    max_pos_count=0
+    for pos in POS_Set:
+        count=POS_Set[pos]
+        if max_pos_count<count:
+            max_pos_count=count
+    max_poses=[]
+    for pos in POS_Set:
+        count=POS_Set[pos]
+        if max_pos_count==count:
+            max_poses.append(pos)
+    word_list_max[word]=max_poses
 #词/每个词性出现的次数
 fp=open('data/word_pos.txt','w+')
 json.dump(word_list,fp)
+fp.close()
+
+fp=open('data/word_pos_max.txt','w+')
+json.dump(word_list_max,fp)
 fp.close()
 
 word_trans={}
@@ -61,36 +79,24 @@ for s in s_list:
             continue
 
         if now_w[0] in word_trans:
-            now_w_state=word_trans[now_w[0]]
+            before_w_state=word_trans[now_w[0]]
         else:
-            now_w_state=dict()
-            word_trans[now_w[0]]=now_w_state
+            before_w_state=dict()
+            word_trans[now_w[0]]=before_w_state
 
-        if now_w[1] in now_w_state:
-            POS_State=now_w_state[now_w[1]]
+        if befor_w[1] in before_w_state:
+            POS_State=before_w_state[befor_w[1]]
         else:
             POS_State=dict()
-            now_w_state[now_w[1]]=POS_State
+            before_w_state[befor_w[1]]=POS_State
 
-        if befor_w[1] in POS_State:
-            POS_State[befor_w[1]]+=1
+        if now_w[1] in POS_State:
+            POS_State[now_w[1]]+=1
         else:
-            POS_State[befor_w[1]]=1
+            POS_State[now_w[1]]=1
 
-for word in word_trans:
-    pos_list=word_trans[word]
-    for pos in pos_list:
-        before_pos = pos_list[pos]
 
-        count=0
-        for b_p in before_pos:
-            count+=before_pos[b_p]
-
-        before_pos_1=dict()
-        for b_p in before_pos:
-            before_pos_1[b_p]=float(before_pos[b_p])/count
-        pos_list[pos]=before_pos_1
-#词/可能的词性/前词词性导致本词词性的概率
+#词/前词的词性/前词词性导致本词词性=概率
 fp=open('data/word_trans.txt','w+')
 json.dump(word_trans,fp)
 fp.close()

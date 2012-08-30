@@ -67,6 +67,7 @@ class FoundWord:
     def __init__(self,str,pos):
         self.word=str
         self.pos=pos
+        self.word_type_list=None
     def __str__(self):
         return self.word
 class SearchWork:
@@ -262,10 +263,48 @@ class SignWordPos:
         fp=open('data/word_pos.txt','r')
         self.word_pos=json.load(fp)
         fp.close()
-
+        fp=open('data/word_pos_max.txt','r')
+        self.word_pos_max=json.load(fp)
+        fp.close()
         fp=open('data/word_trans.txt','r')
         self.word_tran=json.load(fp)
         fp.close()
+
+    def ProcessSentence(self,words):
+        first_word=words[0]
+        if first_word.word in self.word_pos_max:
+            first_word.word_type_list=self.word_pos_max[first_word.word]
+        else:
+            first_word.word_type_list=None
+        if len(words)>=2:
+            for index in range(1,len(words)-1):
+                pre_word=words[index-1]
+                now_word=words[index]
+                now_word.word_type_list=None
+                if now_word.word in self.word_tran:
+                    now_pos=self.word_tran[now_word.word]
+                    if pre_word.word_type_list!=None:
+                        now_posible_pos={}
+                        for wt in pre_word.word_type_list:
+                            if wt in now_pos:
+                                sub_pos=now_pos[wt]
+                                for wt2 in sub_pos:
+                                    if wt2 in now_posible_pos:
+                                        now_posible_pos[wt2]+=sub_pos[wt2]
+                                    else:
+                                        now_posible_pos[wt2]=sub_pos[wt2]
+                        max_possible=0
+                        for wt in now_posible_pos:
+                            max_possible=max(max_possible,now_posible_pos[wt])
+                        now_posible_pos_list=[]
+                        for wt in now_posible_pos:
+                            if max_possible==now_posible_pos[wt]:
+                                now_posible_pos_list.append(wt)
+                        now_word.word_type_list=now_posible_pos_list
+                if now_word.word_type_list==None:
+                    if now_word.word in self.word_pos_max:
+                        now_word.word_type_list=self.word_pos_max[now_word.word]
+
 
 if __name__ == '__main__':
     word_dict_root=LoadDefaultWordDic()
@@ -275,7 +314,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"泡面，就是一种听起来很讨厌，煮起来很香，刚喝一口汤就想吃掉一整锅，可真等到吃掉一整锅又觉得很恶心的奇怪食物。"
+    full_text=u"如果弘法寺有意愿"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:
@@ -287,9 +326,6 @@ if __name__ == '__main__':
         print tp
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
+        signwordpos.ProcessSentence(words)
         for word in words:
-            if word_dict_root.word_type.has_key(word.word):
-                types=word_dict_root.word_type[word.word]
-            else:
-                types=None
-            print u">>%s %s"%(word.word,str(types))
+            print u">>%s %s"%(word.word,word.word_type_list)
