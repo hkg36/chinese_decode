@@ -1,4 +1,3 @@
-__author__ = 'applepc'
 import codecs
 fp=open('dict/chinese_data.txt','r')
 all_line=fp.readlines()

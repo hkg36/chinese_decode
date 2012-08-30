@@ -2,7 +2,6 @@
 import bsddb3
 import os
 import pickle
-
 class TestData:
     id=0
     name=None

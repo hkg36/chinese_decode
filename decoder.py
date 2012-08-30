@@ -1,12 +1,9 @@
 #-*-coding:utf-8-*-
 import re
-import copy
-import json
-import pickle
 import string
 import codecs
-import math
 import bisect
+import ujson as json
 
 class WordCell:
     freq=0
@@ -260,13 +257,25 @@ def LoadDefaultWordDic():
     print 'dict loaded'
     return word_dict_root
 
+class SignWordPos:
+    def LoadData(self):
+        fp=open('data/word_pos.txt','r')
+        self.word_pos=json.load(fp)
+        fp.close()
+
+        fp=open('data/word_trans.txt','r')
+        self.word_tran=json.load(fp)
+        fp.close()
+
 if __name__ == '__main__':
     word_dict_root=LoadDefaultWordDic()
+    signwordpos=SignWordPos()
+    signwordpos.LoadData()
 
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"深圳市政协委员金心异在其微博上发表的上述博文"
+    #full_text=u"泡面，就是一种听起来很讨厌，煮起来很香，刚喝一口汤就想吃掉一整锅，可真等到吃掉一整锅又觉得很恶心的奇怪食物。"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:
