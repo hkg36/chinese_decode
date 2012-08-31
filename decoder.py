@@ -271,6 +271,8 @@ class SignWordPos:
         fp.close()
 
     def ProcessSentence(self,words):
+        if len(words)==0:
+            return
         first_word=words[0]
         if first_word.word in self.word_pos_max:
             first_word.word_type_list=self.word_pos_max[first_word.word]
@@ -314,7 +316,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    full_text=u"如果弘法寺有意愿"
+    #full_text=u"如果弘法寺有意愿"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
     text_list=[]
     for tp in text_pice:

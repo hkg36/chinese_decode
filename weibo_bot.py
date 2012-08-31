@@ -182,7 +182,7 @@ if __name__ == '__main__':
             comment_since_id=resrow[0]
         if debug_mode==1:
             comment_since_id=0
-        wres=client.comments__to_me(count=80,since_id=comment_since_id)
+        wres=sub_client.comments__to_me(count=80,since_id=comment_since_id)
 
         if wres.has_key('comments'):
             comments=wres['comments']
