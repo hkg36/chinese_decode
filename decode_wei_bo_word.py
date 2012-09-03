@@ -12,7 +12,7 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
     weibo_word=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",weibo_word)
     weibo_word=re.sub(u"\w{0,4}://[\w\d./]*","",weibo_word,0,re.I)
 
-    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",weibo_word)
+    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",weibo_word)
     text_list=[]
     for tp in text_pice:
         tp=tp.strip()

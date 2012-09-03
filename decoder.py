@@ -16,8 +16,7 @@ class WordTree:
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()
-            line_text=line.decode('utf-8')
-            self.AddWordToTree(line_text)
+            self.AddWordToTree(line)
 
     def AddWordToTree(self,line_text):
         if line_text in self.word_loaded:
@@ -161,7 +160,31 @@ class LineSpliter:
         self.CheckDoubleOverlap()
         self.CheckAfterOverlap()
 
+        self.CheckCantantPre()
+        self.CheckTail()
+
         return self.found_word
+
+    def split_small_word(self,word):
+        proc_work=[]
+        found_word=[]
+        for index in range(len(word)):
+            char=word[index]
+            next_round_process_word=[]
+            if len(proc_work)==0:
+                proc_work.append(SearchWork(index,self.search_root))
+            for one_proc in proc_work:
+                res=one_proc.test_next_word(char) #检查下一个字
+                if isinstance(res,FoundWord):
+                    has_one_success=True
+                    found_word.append(res)
+                    next_round_process_word.append(one_proc)
+                    need_create_new_process=True
+                elif res==True:
+                    has_one_success=True
+                    next_round_process_word.append(one_proc)
+            proc_work=next_round_process_word
+        return found_word
 
     def printFoundList(self):
         for word in self.found_word:
@@ -212,14 +235,24 @@ class LineSpliter:
                         nowinfo=self.search_root.word_loaded[now_word.word]
                         aftinfo=self.search_root.word_loaded[aft_word.word]
                         if nowinfo.freq==0 or aftinfo.freq/nowinfo.freq>2:
-                            #字归后词 裁剪前词
+                            #字归后词 重新拆分前词
                             new_word=now_word.word
                             new_word=new_word[0:len(new_word)-i2]
-                            now_word.word=new_word
+                            new_found=self.split_small_word(new_word)
+                            for found in new_found:
+                                found.pos+=now_word.pos
+                            del self.found_word[index-1]
+                            self.found_word.extend(new_found)
+                            self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
                             break
                     new_word=aft_word.word[i2:]
-                    aft_word.word=new_word
-                    aft_word.pos+=i2
+                    new_found=self.split_small_word(new_word)
+                    offset_index=aft_word.pos+i2
+                    for found in new_found:
+                        found.pos+=offset_index
+                    del self.found_word[index]
+                    self.found_word.extend(new_found)
+                    self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
 
 
     def CheckTail(self):
@@ -237,7 +270,7 @@ class LineSpliter:
                     index+=1
 def LoadDefaultWordDic():
     word_dict_root=WordTree()
-    fp=open('dict/chinese_data.txt','r') ##网友整理
+    fp=codecs.open('dict/chinese_data.txt','r','utf8') ##网友整理
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
@@ -316,8 +349,8 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"如果弘法寺有意愿"
-    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]",full_text)
+    #full_text=u"局长杨达才同志在事故现场的"
+    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
         tp=tp.strip()
