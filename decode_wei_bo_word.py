@@ -24,6 +24,8 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
         for word in words:
+            if len(word.word)<=1:
+                continue
             if word.word in word_dict_root.word_type:
                 word_type=word_dict_root.word_type[word.word]
                 #if u'N' in word_type or u'V' in word_type:

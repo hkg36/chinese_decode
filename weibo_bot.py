@@ -71,6 +71,9 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
             max_weibo_id.append(id)
     if len(max_weibo_id)>0:
         for weibo_id in max_weibo_id:
+            dbc.execute('select word from all_weibo where weibo_id=?',(weibo_id,))
+            for resrow in dbc:
+                print "==",resrow[0]
             dbc.execute("select word from all_weibo where reply_id=?",(weibo_id,))
             for resrow in dbc:
                 word=RemoveWeiboRubbish(resrow[0])
@@ -165,12 +168,12 @@ if __name__ == '__main__':
             try:
                 if debug_mode==0:
                     sub_user=sub_users[random.randint(0,len(sub_users)-1)]
-                    sub_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,sub_user[0],sub_user[1])
-                    wbres=sub_client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
+                    #sub_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,sub_user[0],sub_user[1])
+                    wbres=client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
                 pass
             except Exception,e:
                 print e
-
+    exit()
     for sub_user in sub_users:
         dbc=dbbot.cursor()
         sub_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,sub_user[0],sub_user[1])
