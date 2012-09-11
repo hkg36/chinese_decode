@@ -2,17 +2,63 @@
 import re
 import string
 import codecs
-import bisect
-import ujson as json
+import bsddb3
+import os
+import pickle
+try:
+    import ujson as json
+except Exception,e:
+    import json
 
 class WordCell:
     freq=0
 
+class DbTree:
+    def __init__(self):
+        home_dir='data/dictdb'
+        try:
+            os.mkdir(home_dir)
+        except Exception,e:
+            print e
+        self.dbenv = bsddb3.db.DBEnv()
+        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
+                                  bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
+                                  bsddb3.db.DB_RECOVER)
+        self.db = bsddb3.db.DB(self.dbenv)
+        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
+    def findword(self,word):
+        word_find=word.encode('utf8')
+        cursor=self.db.cursor()
+        res = cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
+        cursor.close()
+
+        if res!=None:
+            res=(res[0].decode('utf8'),pickle.loads(res[1]));
+        return res
+    def __del__(self):
+        if self.db:
+            self.db.close()
+        self.dbenv.close()
 class WordTree:
     word_all=[]
     word_loaded={}
     word_type={}
     word_weight={}
+    def __init__(self):
+        home_dir='data/dictdb'
+        try:
+            os.mkdir(home_dir)
+        except Exception,e:
+            print e
+        self.dbenv = bsddb3.db.DBEnv()
+        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
+                             bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
+                             bsddb3.db.DB_RECOVER)
+    def __del__(self):
+        if self.db:
+            self.db.close()
+        self.dbenv.close()
+
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()
@@ -30,6 +76,26 @@ class WordTree:
         for one in self.word_loaded:
             self.word_all.append(one)
         self.word_all.sort()
+
+        self.db = bsddb3.db.DB(self.dbenv)
+        try:
+            self.db.remove('maindb.db','main')
+        except Exception,e:
+            print e
+        self.db = bsddb3.db.DB(self.dbenv)
+        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
+
+        for one in self.word_loaded:
+            wc=self.word_loaded[one]
+            info={'freq':wc.freq}
+            if one in self.word_type:
+                info['type']=self.word_type[one]
+            if one in self.word_weight:
+                info['weight']=self.word_weight[one]
+            self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
+
+        self.dbenv.txn_checkpoint()
+        self.dbenv.log_archive(bsddb3.db.DB_ARCH_REMOVE)
 
     def LoadSogouData(self,all_line):
         line_reader=re.compile("^([^\s]*)\s+(\d*)\s+(.*)",re.IGNORECASE)
@@ -67,6 +133,7 @@ class FoundWord:
         self.word=str
         self.pos=pos
         self.word_type_list=None
+        self.info=None
     def __str__(self):
         return self.word
 class SearchWork:
@@ -76,6 +143,17 @@ class SearchWork:
         self.temp_word=''
     def test_next_word(self,char):
         self.temp_word+=char
+        res=self.searchroot.findword(self.temp_word)
+        if res==None:
+            return False
+        else:
+            if res[0]==self.temp_word:
+                foundword=FoundWord(self.temp_word,self.startpos)
+                foundword.info=res[1]
+                return foundword
+            else:
+                return True
+        """
         pos=bisect.bisect_left(self.searchroot.word_all,self.temp_word)
         if pos>=len(self.searchroot.word_all):
             return False
@@ -85,7 +163,7 @@ class SearchWork:
         elif pos_word.startswith(self.temp_word):
             return True #search continue
         else:
-            return False #search die
+            return False #search die"""
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
@@ -231,20 +309,17 @@ class LineSpliter:
             for i2 in range(1,len(aft_word.word)):
                 word_pice=aft_word.word[0:i2]
                 if now_word.word.endswith(word_pice):
-                    if now_word.word in self.search_root.word_loaded and aft_word.word in self.search_root.word_loaded:
-                        nowinfo=self.search_root.word_loaded[now_word.word]
-                        aftinfo=self.search_root.word_loaded[aft_word.word]
-                        if nowinfo.freq==0 or aftinfo.freq/nowinfo.freq>2:
-                            #字归后词 重新拆分前词
-                            new_word=now_word.word
-                            new_word=new_word[0:len(new_word)-i2]
-                            new_found=self.split_small_word(new_word)
-                            for found in new_found:
-                                found.pos+=now_word.pos
-                            del self.found_word[index-1]
-                            self.found_word.extend(new_found)
-                            self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
-                            break
+                    if (now_word.info!=None and aft_word.info!=None) and (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>2):
+                        #字归后词 重新拆分前词
+                        new_word=now_word.word
+                        new_word=new_word[0:len(new_word)-i2]
+                        new_found=self.split_small_word(new_word)
+                        for found in new_found:
+                            found.pos+=now_word.pos
+                        del self.found_word[index-1]
+                        self.found_word.extend(new_found)
+                        self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
+                        break
                     new_word=aft_word.word[i2:]
                     new_found=self.split_small_word(new_word)
                     offset_index=aft_word.pos+i2
@@ -269,6 +344,8 @@ class LineSpliter:
                 else:
                     index+=1
 def LoadDefaultWordDic():
+    return DbTree()
+def BuildDefaultWordDic():
     word_dict_root=WordTree()
     fp=codecs.open('dict/chinese_data.txt','r','utf8') ##网友整理
     all_line=fp.readlines()
@@ -342,6 +419,7 @@ class SignWordPos:
 
 
 if __name__ == '__main__':
+    #BuildDefaultWordDic()
     word_dict_root=LoadDefaultWordDic()
     signwordpos=SignWordPos()
     signwordpos.LoadData()
@@ -349,7 +427,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"局长杨达才同志在事故现场的"
+    #full_text=u"还那么大腹便便"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
