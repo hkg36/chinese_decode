@@ -26,8 +26,8 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
         for word in words:
             if len(word.word)<=1:
                 continue
-            if word.word in word_dict_root.word_type:
-                word_type=word_dict_root.word_type[word.word]
+            if word.info!=None and 'type' in word.info:
+                word_type=word.info['type']
                 #if u'N' in word_type or u'V' in word_type:
                 if word.word in word_record:
                     word_record[word.word]=word_record[word.word]+1

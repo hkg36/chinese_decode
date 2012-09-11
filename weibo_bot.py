@@ -25,8 +25,8 @@ def FindWordCount(word_dict_root,word):
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
         for word in words:
-            if word.word in word_dict_root.word_type:
-                word_type=word_dict_root.word_type[word.word]
+            if word.info!=None and 'type' in word.info:
+                word_type=word.info['type']
                 if word.word in word_record:
                     word_record[word.word]=word_record[word.word]+1
                 else:
@@ -45,8 +45,9 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
 
     main_weight=0
     for key in word_record:
-        if key in word_dict_root.word_weight:
-            main_weight+=1.0/word_dict_root.word_weight[key]
+        word_info=word_dict_root.getwordinfo(key)
+        if word_info!=None:
+            main_weight+=1.0/word_info['weight']
 
     weibo_reply_list=[]
     #回帖中的对话
@@ -83,7 +84,7 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=0
+    debug_mode=1
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'

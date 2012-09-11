@@ -16,10 +16,6 @@ class WordCell:
 class DbTree:
     def __init__(self):
         home_dir='data/dictdb'
-        try:
-            os.mkdir(home_dir)
-        except Exception,e:
-            print e
         self.dbenv = bsddb3.db.DBEnv()
         self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
                                   bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
@@ -35,6 +31,12 @@ class DbTree:
         if res!=None:
             res=(res[0].decode('utf8'),pickle.loads(res[1]));
         return res
+    def getwordinfo(self,word):
+        word_find=word.encode('utf8')
+        res=self.db.get(word_find)
+        if res!=None:
+            return pickle.loads(res)
+        return None
     def __del__(self):
         if self.db:
             self.db.close()
