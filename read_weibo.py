@@ -2,6 +2,7 @@
 import weibo_tools
 import sqlite3
 import time
+import traceback
 from STTrans import STTrans
 
 fetch_time=0
@@ -31,7 +32,7 @@ def ReadUserWeibo(client):
             else:
                 break
     except Exception,e:
-        print e
+        print traceback.format_exc()
         return
 
 
@@ -95,7 +96,7 @@ def RecheckComment(client):
             try:
                 CheckComment(client,dbc,weibo_id,last_comment_id)
             except Exception,e:
-                print e
+                print traceback.format_exc()
                 db.commit()
                 return
     db.commit()
@@ -142,4 +143,4 @@ if __name__ == '__main__':
 
         RecheckComment(client)
         print 'go sleep'
-        time.sleep(60*10)
+        time.sleep(60*5)
