@@ -21,7 +21,7 @@ class DbTree:
                                   bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
                                   bsddb3.db.DB_RECOVER)
         self.db = bsddb3.db.DB(self.dbenv)
-        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
+        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
     def findword(self,word):
         word_find=word.encode('utf8')
         cursor=self.db.cursor()
@@ -153,8 +153,10 @@ class SearchWork:
                 foundword=FoundWord(self.temp_word,self.startpos)
                 foundword.info=res[1]
                 return foundword
-            else:
+            elif self.temp_word.startswith(res[0]):
                 return True
+            else:
+                return False
         """
         pos=bisect.bisect_left(self.searchroot.word_all,self.temp_word)
         if pos>=len(self.searchroot.word_all):
@@ -231,6 +233,7 @@ class LineSpliter:
 
             self.process_work=next_round_process_word
 
+        self.no_cn_fin=True
         self.CheckNoCnFound()
         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
 
@@ -429,7 +432,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"还那么大腹便便"
+    #full_text=u"这几块手表分别被多位与钟表行业相关的资深网友鉴定为劳力士探险家型II"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

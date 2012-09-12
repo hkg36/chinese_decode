@@ -139,8 +139,10 @@ if __name__ == '__main__':
 
     while True:
         client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-        ReadUserWeibo(client)
-
-        RecheckComment(client)
+        try:
+            ReadUserWeibo(client)
+            RecheckComment(client)
+        except Exception,e:
+            print e
         print 'go sleep'
         time.sleep(60*5)
