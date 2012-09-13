@@ -7,7 +7,7 @@ class STTrans(object):
     T2S={}
     S2T={}
     def init(self):
-        fp=codecs.open('繁体字简体字对照表.txt','r','utf-8')
+        fp=codecs.open('T_To_S_List.txt','r','utf-8')
         all_line=fp.readlines()
         fp.close()
 
