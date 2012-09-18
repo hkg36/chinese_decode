@@ -24,8 +24,6 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
         for word in words:
-            if len(word.word)<=1:
-                continue
             if word.info!=None and 'type' in word.info:
                 word_type=word.info['type']
                 #if u'N' in word_type or u'V' in word_type:
@@ -46,7 +44,7 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
             info[weibo_id]=info[weibo_id]+word_record[word]
 
 if __name__ == '__main__':
-
+    ignorewords=set((u'嘻嘻',u'哈哈',u'恩',u'嘿嘿',u'为什么',u'哦',u'噗',u'肿么办',u'怎么办'))
     word_dict_root=LoadDefaultWordDic()
 
     db=sqlite3.connect("data/weibo_word_base.db")
@@ -92,6 +90,8 @@ if __name__ == '__main__':
 
     dbc=dbtext.cursor()
     for word in word_dict:
+        if word in ignorewords:
+            continue
         add_info=word_dict[word]
         for weibo_id in add_info:
             dbc.execute('replace into weibo_comment_word(word,weibo_id,times) values(?,?,?)',(word,weibo_id,add_info[weibo_id]))

@@ -43,10 +43,11 @@ def ReadUserWeibo(client):
         db.commit()
 
     dbc=db.cursor()
+    count=0
     for one in all_time_line_statuses:
         if 'uid' not in one or one['uid']==client.user_id:
             continue
-        print "}}}",one['text']
+        count+=1
         text=STTrans.getInstanse().TransT2S(one['text'])
         dbc.execute("insert or ignore into weibo_text(weibo_id,uid,word) values(?,?,?)",(one['id'],one['uid'],text))
         dbc.execute("insert or ignore into weibo_commentlast(weibo_id,last_comment_id) values(?,?)",(one['id'],0))
@@ -64,10 +65,8 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
             last_one_comment=comments[0]
             dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id,checktime) values(?,?,?)",(weibo_id,last_one_comment['id'],now))
         else:
-            print 'not comment'
             dbc.execute("update weibo_commentlast set checktime=? where weibo_id=?",(now,weibo_id))
         for onec in comments:
-            print onec['text']
             reply_comment_id=0
             if 'reply_comment' in onec:
                 reply_comment_id=onec['reply_comment']['id']
@@ -145,4 +144,5 @@ if __name__ == '__main__':
         except Exception,e:
             print e
         print 'go sleep'
+        print time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
         time.sleep(60*5)
