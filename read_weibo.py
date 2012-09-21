@@ -35,7 +35,6 @@ def ReadUserWeibo(client):
         print traceback.format_exc()
         return
 
-
     if len(all_time_line_statuses)>0:
         last_one = all_time_line_statuses[0]
         dbc=db.cursor()
@@ -79,7 +78,7 @@ def RecheckComment(client):
     #print timestr
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()
-    dbc.execute("select weibo_id,last_comment_id,checktime,CreatedTime from weibo_commentlast order by checktime desc")
+    dbc.execute("select weibo_id,last_comment_id,checktime,CreatedTime from weibo_commentlast order by checktime desc limit 500")
 
     all_line=dbc.fetchall()
     for resrow in all_line:
@@ -102,9 +101,9 @@ def RecheckComment(client):
 
 if __name__ == '__main__':
 
-    APP_KEY = '2117816058'
-    APP_SECRET = '80f6fac494eed2f4e8a54acb85683aea'
-    CALLBACK_URL = 'http://ljnh.sinaapp.com/controller/callback.php'
+    APP_KEY = '2824743419'
+    APP_SECRET = '9c152c876ec980df305d54196539773f'
+    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
