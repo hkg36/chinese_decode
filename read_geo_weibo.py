@@ -4,6 +4,8 @@ import sqlite3
 import time
 from datetime import datetime
 import traceback
+import sys
+import os
 from STTrans import STTrans
 try:
     import ujson as json
@@ -17,6 +19,8 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
+    if not os.path.exists("GeoData"):
+        os.mkdir("GeoData")
     db=sqlite3.connect("GeoData/weibo_word_base.db")
     try:
         db.execute("create table weibo_text(weibo_id int not null PRIMARY KEY,uid int not null,word varchar(1024) not null,lat float,lng float,time unsigned int)")
@@ -80,6 +84,8 @@ if __name__ == '__main__':
                         continue
                     user=line['user']
                     geo=line['geo']
+                    if geo==None:
+                        continue
                     if geo['type']=="Point":
                         lat=geo['coordinates'][0]
                         lng=geo['coordinates'][1]
