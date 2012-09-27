@@ -1,10 +1,10 @@
 #-*-coding:utf-8-*-
-import bsddb3
+"""import bsddb3
 import os
 import pickle
 import scipy
 import scipy.linalg
-"""
+
 s = '-1 2;2 2;4 -2'
 A = scipy.mat(s)
 U, s, Vh=scipy.linalg.svd(A,True)
@@ -29,15 +29,27 @@ print weibo_l_w.count()
 sql_move=sqlite3.connect('GeoData/weibo_word_base.db')
 sc=sql_move.cursor()
 sc.execute('select weibo_id,uid,word,lat,lng,time from weibo_text')
+to_insert=[]
 for weibo_id,uid,word,lat,lng,time in sc:
     data={"weibo_id":int(weibo_id),"uid":int(uid),"pos":{"lat":float(lat),"lng":float(lng)},"time":int(time),"word":word}
-    weibo_l_w.update({"weibo_id":int(weibo_id)},data,upsert=True)
+    to_insert.append(data)
+    if len(to_insert)>100:
+        weibo_l_w.insert(to_insert)
+        to_insert=[]
+if len(to_insert)>0:
+    weibo_l_w.insert(to_insert)
 
 print weibo_l_w.count()
 sc.execute('select info,is_full_info,time from weibo_user_info')
+to_insert=[]
 for info,is_full_info,time in sc:
     data=json.loads(info)
     data['is_full_info']=int(is_full_info)
     data['time']=int(time)
     data['id']=int(data['id'])
-    weibo_l_u.update({'id':data['id']},data,upsert=True)
+    to_insert.append(data)
+    if len(to_insert)>100:
+        weibo_l_u.insert(to_insert)
+        to_insert=[]
+if len(to_insert)>0:
+    weibo_l_u.insert(to_insert)
