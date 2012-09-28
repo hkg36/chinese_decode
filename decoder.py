@@ -126,8 +126,18 @@ class WordTree:
             freq=string.atoi(re_res.group('freq'))
             type=re_res.group('type')
             addedCell=self.AddWordToTree(word)
-            addedCell.freq=freq
+            #addedCell.freq=freq
             self.word_type[word]=type
+            #self.word_weight[word]=freq**(1.0/2)
+    def LoadWordFreqFile(self):
+        fp=open("data/word_freq.txt",'r')
+        word_freq_list=json.load(fp)
+        fp.close()
+
+        for word in word_freq_list:
+            freq=word_freq_list[word]
+            addedCell=self.AddWordToTree(word)
+            addedCell.freq=freq
             self.word_weight[word]=freq**(1.0/2)
 
 class FoundWord:
@@ -143,6 +153,8 @@ class SearchWork:
         self.startpos=startpos
         self.searchroot=searchroot
         self.temp_word=''
+    def __str__(self):
+        return self.temp_word
     def test_next_word(self,char):
         self.temp_word+=char
         res=self.searchroot.findword(self.temp_word)
@@ -153,7 +165,7 @@ class SearchWork:
                 foundword=FoundWord(self.temp_word,self.startpos)
                 foundword.info=res[1]
                 return foundword
-            elif self.temp_word.startswith(res[0]):
+            elif res[0].startswith(self.temp_word):
                 return True
             else:
                 return False
@@ -369,6 +381,8 @@ def BuildDefaultWordDic():
     fp.close()
     word_dict_root.LoadTextFreqBase(all_line)
 
+    word_dict_root.LoadWordFreqFile()
+
     word_dict_root.LoadFinish()
     print 'dict loaded'
     return word_dict_root
@@ -432,7 +446,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"这几块手表分别被多位与钟表行业相关的资深网友鉴定为劳力士探险家型II"
+    full_text=u"回复@刘君鹏丶:[偷笑][偷笑]等你比我成熟点再叫我小屁孩.你可不见得比我成熟[做鬼脸]"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

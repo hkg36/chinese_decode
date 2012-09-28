@@ -6,13 +6,13 @@ try:
 except :
     import json
 import string
+import weibo_bot
 import os
 
 def ProcessOneWord(word_dict_root,weibo_id,weibo_word,word_dict):
-    weibo_word=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",weibo_word)
-    weibo_word=re.sub(u"\w{0,4}://[\w\d./]*","",weibo_word,0,re.I)
+    weibo_word=weibo_bot.RemoveWeiboRubbish(weibo_word)
 
-    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",weibo_word)
+    text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·.]+",weibo_word)
     text_list=[]
     for tp in text_pice:
         tp=tp.strip()
@@ -111,5 +111,3 @@ if __name__ == '__main__':
     dbforsearch.execute("insert into all_word(word,weibo_id,times) select word,weibo_id,times from word_base.all_word")
     dbforsearch.commit()
     dbforsearch.close()
-
-
