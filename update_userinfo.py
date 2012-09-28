@@ -4,6 +4,7 @@ import sqlite3
 import json
 import weibo_tools
 import weibo_api
+import time
 
 if __name__ == '__main__':
     con=pymongo.Connection('218.241.207.46',27017)
@@ -22,6 +23,9 @@ if __name__ == '__main__':
         users=[]
         for data in cur:
             users.append(data)
+        if len(users)==0:
+            time.sleep(60*60)
+            continue
         for data in users:
             try:
                 newdata=client.users__show(uid=data['id'])

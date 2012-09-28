@@ -103,7 +103,7 @@ if __name__ == '__main__':
                     data['is_full_info']=0
                     data['time']=readtime
                     data['id']=int(data['id'])
-                    weibo_l_u.update({'id':data['id']},data,upsert=False)
+                    weibo_l_u.insert(data)
                 if not_go_next_page:
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
