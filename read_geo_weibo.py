@@ -35,13 +35,13 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-
     run_start_time=0
     while True:
         if time.time()-run_start_time<2*60:
             time.sleep(2*60-(time.time()-run_start_time))
         run_start_time=time.time()
+
+        client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
         pos_to_record=[]
@@ -85,7 +85,7 @@ if __name__ == '__main__':
                         lng=geo['coordinates'][1]
                     else:
                         continue
-                    id=line['id']
+                    id=int(line['id'])
                     max_id=max(max_id,id)
                     text=line['text']
                     uid=user['id']
@@ -97,6 +97,12 @@ if __name__ == '__main__':
                     if id<max_id:
                         not_go_next_page=True
                     data={"weibo_id":int(id),"uid":int(uid),"pos":{"lat":float(lat),"lng":float(lng)},"time":int(u_time),"word":text}
+                    if 'thumbnail_pic' in line:
+                        data["thumbnail_pic"]=line['thumbnail_pic']
+                    if "bmiddle_pic" in line:
+                        data["bmiddle_pic"]=line['bmiddle_pic']
+                    if "original_pic" in line:
+                        data["original_pic"]=line['original_pic']
                     weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
 
                     data=user

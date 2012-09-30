@@ -446,7 +446,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    full_text=u"回复@刘君鹏丶:[偷笑][偷笑]等你比我成熟点再叫我小屁孩.你可不见得比我成熟[做鬼脸]"
+    #full_text=u"回复@刘君鹏丶:[偷笑][偷笑]等你比我成熟点再叫我小屁孩.你可不见得比我成熟[做鬼脸]"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
