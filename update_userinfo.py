@@ -5,6 +5,7 @@ import json
 import weibo_tools
 import weibo_api
 import time
+import urllib2
 
 if __name__ == '__main__':
     con=pymongo.Connection('218.241.207.46',27017)
@@ -37,8 +38,10 @@ if __name__ == '__main__':
                 newdata['_id']=data['_id']
                 newdata["is_full_info"]=1
                 weibo_l_u.save(newdata)
-            except Exception,e:
+            except urllib2.HTTPError,e:
                 if e.code==400:
                     data['is_full_info']=-1
                     weibo_l_u.save(data)
                 print e,data['id']
+            except Exception,e:
+                time.sleep(300)
