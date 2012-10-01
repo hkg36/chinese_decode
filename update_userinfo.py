@@ -36,6 +36,10 @@ if __name__ == '__main__':
                 tags=client.tags(uid=data['id'],count=200)
                 newdata['tags']=tags
                 newdata["is_full_info"]=1
+                friend_res=client.friendships__friends__ids(uid=data['id'],count=5000)
+                if 'ids' in friend_res:
+                    ids=friend_res['ids']
+                    newdata['friend_list']=ids
                 data.update(newdata)
                 weibo_l_u.save(data)
             except urllib2.HTTPError,e:

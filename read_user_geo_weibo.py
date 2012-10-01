@@ -76,4 +76,7 @@ if __name__ == '__main__':
                         data["original_pic"]=line['original_pic']
                     weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
                 page+=1
-            weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
+            if max_id>0:
+                weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
+            else:
+                time.sleep(60)
