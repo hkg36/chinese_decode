@@ -35,9 +35,9 @@ if __name__ == '__main__':
                     del newdata['status']
                 tags=client.tags(uid=data['id'],count=200)
                 newdata['tags']=tags
-                newdata['_id']=data['_id']
                 newdata["is_full_info"]=1
-                weibo_l_u.save(newdata)
+                data.update(newdata)
+                weibo_l_u.save(data)
             except urllib2.HTTPError,e:
                 if e.code==400:
                     data['is_full_info']=-1
