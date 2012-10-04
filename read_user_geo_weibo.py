@@ -26,7 +26,7 @@ if __name__ == '__main__':
     while True:
         client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 
-        before_time=time.time()-60*60*24*10
+        before_time=time.time()-60*60*24
         cur=weibo_l_u.find({'$or':[{'last_geo_check':None},{'last_geo_check':{'$lt':before_time}}]}).sort([('last_geo_check',1)]).limit(50)
         for weibo_user in cur:
             last_geo_check_id=0
@@ -39,7 +39,8 @@ if __name__ == '__main__':
                 start_check_time=time.time()
                 try:
                     w_res=client.place__user_timeline(uid=weibo_user['id'],since_id=last_geo_check_id,count=50,page=page)
-                except:
+                except Exception,e:
+                    print e
                     break
                 if 'statuses' not in w_res:
                     break
@@ -78,5 +79,7 @@ if __name__ == '__main__':
                 page+=1
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
+                print '%d read success'%weibo_user['id']
             else:
-                time.sleep(60)
+                weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time}})
+                print '%d read fail'%weibo_user['id']

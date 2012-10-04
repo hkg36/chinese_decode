@@ -59,7 +59,7 @@ if __name__ == '__main__':
             max_id=0
             for page in range(1,11):
                 try:
-                    place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=10000,count=50,page=page,offset=1)
+                    place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
                 except Exception,e:
                     print e
                     break

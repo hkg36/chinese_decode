@@ -10,6 +10,8 @@ import weibo_bot
 import sqlite3
 import math
 
+import Tkinter
+
 #用词语权重法收集接近的句子
 def Step1(word_record):
     db=sqlite3.connect("data/dbforsearch.db")
