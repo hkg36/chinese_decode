@@ -21,7 +21,8 @@ if __name__ == '__main__':
 
     FullInfoVersion=2
     while True:
-        cur=weibo_l_u.find({"is_full_info":{'$lt':FullInfoVersion}}).limit(20)
+        cur=weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
+            ,{"is_full_info":{'$ne':-1}}]}).limit(20)
         users=[]
         for data in cur:
             users.append(data)
