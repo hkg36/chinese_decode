@@ -19,8 +19,9 @@ if __name__ == '__main__':
     user_psw = 'xianchangjia'
     client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 
+    FullInfoVersion=2
     while True:
-        cur=weibo_l_u.find({"is_full_info":0}).limit(20)
+        cur=weibo_l_u.find({"is_full_info":{'$lt':FullInfoVersion}}).limit(20)
         users=[]
         for data in cur:
             users.append(data)
@@ -35,7 +36,7 @@ if __name__ == '__main__':
                     del newdata['status']
                 tags=client.tags(uid=data['id'],count=200)
                 newdata['tags']=tags
-                newdata["is_full_info"]=1
+                newdata["is_full_info"]=FullInfoVersion
                 friend_res=client.friendships__friends__ids(uid=data['id'],count=5000)
                 if 'ids' in friend_res:
                     ids=friend_res['ids']
