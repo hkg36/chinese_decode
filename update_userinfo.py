@@ -42,12 +42,12 @@ if __name__ == '__main__':
                 if 'ids' in friend_res:
                     ids=friend_res['ids']
                     newdata['friend_list']=ids
-                data.update(newdata)
-                weibo_l_u.save(data)
+
+                weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
             except urllib2.HTTPError,e:
                 if e.code==400:
                     data['is_full_info']=-1
-                    weibo_l_u.save(data)
+                    weibo_l_u.update({'_id':data['_id']},{'$set':{'is_full_info':-1}})
                 print e,data['id']
             except Exception,e:
                 time.sleep(300)

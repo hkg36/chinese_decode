@@ -1,16 +1,8 @@
 import weibo_tools
-import sqlite3
 import time
+import urllib2
 from datetime import datetime
-import traceback
-import sys
-import os
-from STTrans import STTrans
 import pymongo
-try:
-    import ujson as json
-except:
-    import json
 if __name__ == '__main__':
     APP_KEY = '2824743419'
     APP_SECRET = '9c152c876ec980df305d54196539773f'
@@ -39,6 +31,11 @@ if __name__ == '__main__':
                 start_check_time=time.time()
                 try:
                     w_res=client.place__user_timeline(uid=weibo_user['id'],since_id=last_geo_check_id,count=50,page=page)
+                except urllib2.HTTPError,e:
+                    print e
+                    if e.code==403:
+                        time.sleep(30)
+                    break
                 except Exception,e:
                     print e
                     break
@@ -82,4 +79,4 @@ if __name__ == '__main__':
                 print '%d read success'%weibo_user['id']
             else:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time}})
-                print '%d read fail'%weibo_user['id']
+                print weibo_user['id'],'read fail'
