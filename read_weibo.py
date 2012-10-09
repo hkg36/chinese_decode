@@ -21,7 +21,7 @@ def ReadUserWeibo(client):
 
     all_time_line_statuses=[]
     try:
-        for page in range(1,10):
+        for page in xrange(1,10):
             public_time_line=client.statuses__home_timeline(page=page,since_id=since_id,count=200,filter_by_author=1,trim_user=1)
             if public_time_line.has_key('statuses'):
                 statuses=public_time_line['statuses']

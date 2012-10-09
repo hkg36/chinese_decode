@@ -201,7 +201,7 @@ class LineSpliter:
             self.no_cn_start_pos=-1
 
     def ProcessLine(self,line):
-        for index in range(len(line)):
+        for index in xrange(len(line)):
             self.no_cn_fin=False
             char=line[index]
             if char in self.number_set or re.match("[a-zA-Z]",char):
@@ -263,7 +263,7 @@ class LineSpliter:
     def split_small_word(self,word):
         proc_work=[]
         found_word=[]
-        for index in range(len(word)):
+        for index in xrange(len(word)):
             char=word[index]
             next_round_process_word=[]
             if len(proc_work)==0:
@@ -290,12 +290,12 @@ class LineSpliter:
         while True:
             gorecheck=False
             if len(self.found_word)>=3:
-                for index in range(start_pos,len(self.found_word)-1):
+                for index in xrange(start_pos,len(self.found_word)-1):
                     pre_word=self.found_word[index-1]
                     aft_word=self.found_word[index+1]
                     now_word=self.found_word[index]
 
-                    for i2 in range(1,len(now_word.word)):
+                    for i2 in xrange(1,len(now_word.word)):
                         if pre_word.word.endswith(now_word.word[0:i2]):
                             if aft_word.word.startswith(now_word.word[i2:]):
                                 start_pos=max(start_pos-1,1)
@@ -310,7 +310,7 @@ class LineSpliter:
     def CheckCantantPre(self):
         #检查前一个词语是当前词语的一部分 全文索引不需要这个
         if len(self.found_word)>=2:
-            for index in range(len(self.found_word)-1,0,-1):
+            for index in xrange(len(self.found_word)-1,0,-1):
                 word=self.found_word[index]
                 pre_word=self.found_word[index-1]
                 if word.word.find(pre_word.word)>=0:
@@ -318,12 +318,12 @@ class LineSpliter:
 
     def CheckAfterOverlap(self):
         #后词包含前词的结尾的时候，重叠部分归出现概率大的词
-        for index in range(len(self.found_word)-1,0,-1):
+        for index in xrange(len(self.found_word)-1,0,-1):
             aft_word=self.found_word[index]
             now_word=self.found_word[index-1]
             if now_word.pos+len(now_word.word)<=aft_word.pos:
                 continue
-            for i2 in range(1,len(aft_word.word)):
+            for i2 in xrange(1,len(aft_word.word)):
                 word_pice=aft_word.word[0:i2]
                 if now_word.word.endswith(word_pice):
                     if (now_word.info!=None and aft_word.info!=None) and (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>2):
@@ -408,7 +408,7 @@ class SignWordPos:
         else:
             first_word.word_type_list=None
         if len(words)>=2:
-            for index in range(1,len(words)-1):
+            for index in xrange(1,len(words)-1):
                 pre_word=words[index-1]
                 now_word=words[index]
                 now_word.word_type_list=None

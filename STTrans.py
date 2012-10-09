@@ -12,10 +12,10 @@ class STTrans(object):
         fp.close()
 
 
-        for index in range(0,len(all_line)-1,2):
+        for index in xrange(0,len(all_line)-1,2):
             TLine=all_line[index].strip()
             SLine=all_line[index+1].strip()
-            for wi in range(len(TLine)):
+            for wi in xrange(len(TLine)):
                 self.T2S[TLine[wi]]=SLine[wi]
                 self.S2T[SLine[wi]]=TLine[wi]
     __inst = None # make it so-called private

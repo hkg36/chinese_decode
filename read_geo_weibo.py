@@ -3,10 +3,8 @@ import weibo_tools
 import sqlite3
 import time
 from datetime import datetime
-import traceback
-import sys
+import urllib2
 import os
-from STTrans import STTrans
 import pymongo
 try:
     import ujson as json
@@ -51,15 +49,20 @@ if __name__ == '__main__':
             pos_to_record.append({'id':line[0],'lat':line[1],'lng':line[2],'time':line[3]})
         pos_cursor.close()
 
+        has_req_error=False
         for pos in pos_to_record:
             starttime=pos['time']
             readtime=time.time()
-            db=sqlite3.connect("GeoData/weibo_word_base.db")
             total_number=0
             max_id=0
-            for page in range(1,11):
+            for page in xrange(1,11):
                 try:
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
+                except urllib2.HTTPError,e:
+                    print e
+                    if e.code==403:
+                        has_req_error=True
+                    break
                 except Exception,e:
                     print e
                     break
@@ -117,3 +120,5 @@ if __name__ == '__main__':
             if max_id!=0:
                 pos_db.execute('update GeoWeiboPoint set last_checktime=? where id=?',(max_id,pos['id']))
                 pos_db.commit()
+            elif has_req_error:
+                time.sleep(30)

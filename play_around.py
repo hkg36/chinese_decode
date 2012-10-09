@@ -44,7 +44,7 @@ def Step1(word_record):
     w_id_count.sort(lambda a,b:cmp(abs(a[1]-main_weight),abs(b[1]-main_weight)))
 
     word2_list={}
-    for i in range(0,min(800,len(w_id_count))):
+    for i in xrange(0,min(800,len(w_id_count))):
         dbc.execute("select weibo_id,word,times from all_word where weibo_id=?",(w_id_count[i][0],))
         for weibo_id,word,time in dbc:
             if word in word2_list:
@@ -71,12 +71,12 @@ if __name__ == '__main__':
         weibo_index.update(l2.keys())
     weibo_index=list(weibo_index)
     weibo_id_index=dict()
-    for i in range(0,len(weibo_index)):
+    for i in xrange(0,len(weibo_index)):
         weibo_id_index[weibo_index[i]]=i
 
     A=numpy.zeros((len(word_index),len(weibo_index)+1))
 
-    for i in range(0,len(word_index)):
+    for i in xrange(0,len(word_index)):
         word=word_index[i]
         word_info=word_dict_root.getwordinfo(word)
         if word_info!=None:
@@ -101,12 +101,12 @@ if __name__ == '__main__':
     weibo_pos=[]
     weibo_x=R[1]
     weibo_y=R[2]
-    for i in range(0,len(weibo_index)):
+    for i in xrange(0,len(weibo_index)):
         weibo_pos.append((weibo_x[i],weibo_y[i]))
 
     weibo_pos_last=(R[1][len(weibo_index)],R[2][len(weibo_index)])
     weibo_dis=[]
-    for i in range(0,len(weibo_pos)):
+    for i in xrange(0,len(weibo_pos)):
         weibo_dis.append((weibo_index[i],math.sqrt( (weibo_pos_last[0]-weibo_pos[i][0])**2+ (weibo_pos_last[1]-weibo_pos[i][1])**2 )))
     weibo_dis.sort(lambda a,b:cmp(a[1],b[1]))
 
@@ -116,4 +116,3 @@ if __name__ == '__main__':
         dbc.execute("select word from all_weibo where weibo_id=?",(one[0],))
         word,=dbc.next()
         print word
-

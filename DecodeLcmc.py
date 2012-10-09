@@ -71,7 +71,7 @@ word_trans={}
 for s in s_list:
     if len(s)<2:
         continue
-    for index in range(1,len(s)-1):
+    for index in xrange(1,len(s)-1):
         befor_w=s[index-1]
         now_w=s[index]
 
