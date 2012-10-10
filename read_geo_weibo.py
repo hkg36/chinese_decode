@@ -71,6 +71,8 @@ if __name__ == '__main__':
                     break
                 #print json.dumps(place_res)
                 total_number=place_res['total_number']
+                if 'statuses' not in place_res:
+                    break
                 statuses=place_res['statuses']
                 if len(statuses)==0:
                     break
