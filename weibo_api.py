@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = '1.04'
-__author__ = 'Liao Xuefeng (askxuefeng@gmail.com)'
-
-'''
-Python client SDK for sina weibo API using OAuth 2.
-'''
-
 try:
     import ujson as json
 except ImportError:
@@ -16,15 +9,10 @@ import time
 import urllib
 import urllib2
 import logging
+import pycurl
+from cStringIO import StringIO
 
-def _obj_hook(pairs):
-    '''
-    convert json object to python object.
-    '''
-    o = JsonObject()
-    for k, v in pairs.iteritems():
-        o[str(k)] = v
-    return o
+API_RemoteIP=None
 
 class APIError(StandardError):
     '''
@@ -108,16 +96,41 @@ def _http_call(url, method, authorization, **kw):
         params = _encode_params(**kw)
     http_url = '%s?%s' % (url, params) if method==_HTTP_GET else url
     http_body = None if method==_HTTP_GET else params
-    req = urllib2.Request(http_url, data=http_body)
+
+    httpheaders=[]
+    if authorization:
+        httpheaders.append('Authorization: OAuth2 %s' % authorization)
+    if API_RemoteIP:
+        httpheaders.append('API-RemoteIP:%s'%API_RemoteIP)
+    if boundary:
+        httpheaders.append('Content-Type: multipart/form-data; boundary=%s' % boundary)
+
+    curl=pycurl.Curl()
+    curl.setopt(pycurl.URL,http_url)
+    curl.setopt(pycurl.TIMEOUT, 20)
+    curl.setopt(pycurl.HTTPHEADER,httpheaders)
+    if http_body:
+        curl.setopt(pycurl.POSTFIELDS,http_body)
+
+    b = StringIO()
+    curl.setopt(pycurl.WRITEFUNCTION, b.write)
+    curl.setopt(pycurl.FOLLOWLOCATION, 1)
+    curl.setopt(pycurl.MAXREDIRS, 5)
+    curl.perform()
+    b.seek(0)
+
+    """req = urllib2.Request(http_url, data=http_body)
     if authorization:
         req.add_header('Authorization', 'OAuth2 %s' % authorization)
+    if API_RemoteIP:
+        req.add_header('API-RemoteIP',API_RemoteIP)
     if boundary:
         req.add_header('Content-Type', 'multipart/form-data; boundary=%s' % boundary)
     resp = urllib2.urlopen(req,timeout=20)
-    body = resp.read()
-    r = json.loads(body)
-    if hasattr(r, 'error_code'):
-        raise APIError(r.error_code, getattr(r, 'error', ''), getattr(r, 'request', ''))
+    body = resp.read()"""
+    r = json.load(b)
+    if 'error_code' in r:
+        raise APIError(r['error_code'], r.get('error', ''),r.get('request', ''))
     return r
 
 class HttpObject(object):

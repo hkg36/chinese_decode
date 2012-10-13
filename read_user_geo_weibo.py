@@ -3,6 +3,8 @@ import time
 import urllib2
 from datetime import datetime
 import pymongo
+import weibo_api
+import random
 if __name__ == '__main__':
     APP_KEY = '2824743419'
     APP_SECRET = '9c152c876ec980df305d54196539773f'
@@ -34,8 +36,14 @@ if __name__ == '__main__':
                 except urllib2.HTTPError,e:
                     print e
                     if e.code==403:
-                        time.sleep(30)
+                        time.sleep(5)
                     break
+                except weibo_api.APIError,e:
+                    print e
+                    if e.error_code==10022:
+                        has_req_error=True
+                        break
+                    continue
                 except Exception,e:
                     print e
                     break
