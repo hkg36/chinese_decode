@@ -14,6 +14,7 @@ try:
 except:
     import json
 
+
 if __name__ == '__main__':
     APP_KEY = '2824743419'
     APP_SECRET = '9c152c876ec980df305d54196539773f'
@@ -75,6 +76,7 @@ if __name__ == '__main__':
         pos_cursor.close()
 
         if len(pos_to_record)==0:
+            print 'sleep for not thing to update'
             time.sleep(20)
             continue
 
@@ -88,10 +90,12 @@ if __name__ == '__main__':
             total_number=0
             max_id=0
             has_req_error=False
-            for page in xrange(1,11):
+            page=1
+            while page < 11:
                 try:
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
                     print 'read_page',page
+                    page+=1
                 except urllib2.HTTPError,e:
                     print e
                     if e.code==403:
@@ -167,6 +171,7 @@ if __name__ == '__main__':
                     weibo_l_w.insert(weiboslist.values())
                 except Exception,e:
                     print 'insert fail',e
+
             if len(userslist):
                 try:
                     weibo_l_u.insert(userslist.values())

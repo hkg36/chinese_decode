@@ -29,6 +29,7 @@ if __name__ == '__main__':
             page=1
 
             max_id=0
+            weiboslist={}
             while True:
                 start_check_time=time.time()
                 try:
@@ -80,8 +81,11 @@ if __name__ == '__main__':
                         data["bmiddle_pic"]=line['bmiddle_pic']
                     if "original_pic" in line:
                         data["original_pic"]=line['original_pic']
-                    weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
+                    #weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
+                    weiboslist[data['weibo_id']]=data
                 page+=1
+            if len(weiboslist)>0:
+                weibo_l_w.insert(weiboslist.values())
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
                 print '%d read success'%weibo_user['id']
