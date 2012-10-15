@@ -5,6 +5,7 @@ import codecs
 import bsddb3
 import os
 import pickle
+import math
 try:
     import ujson as json
 except Exception,e:
@@ -117,7 +118,7 @@ class WordTree:
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
             self.word_type[word]=word_type
-            self.word_weight[word]=freq**(1.0/2)
+            self.word_weight[word]=1/math.log(freq,2)
     def LoadTextFreqBase(self,all_line):
         line_reader=re.compile("^(?P<word>[^\s]*)\s+(?P<freq>\d*)\s+(?P<type>[^\s]*)",re.IGNORECASE)
         for line in all_line:

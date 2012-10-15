@@ -37,6 +37,11 @@ def RemoveWeiboRubbish(word):
     word=re.sub(u"\[[^\]]*\]","",word,0,re.I)
     word=word.strip()
     return word
+def DoubleAve(l):
+    all=0
+    for o in l:
+        all+=o*o
+    return math.sqrt(all/len(l))
 
 def FindReplyForSentence(word_dict_root,dbsearch,word):
     dbc=dbsearch.cursor()
@@ -45,45 +50,72 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
     main_weight=0
     for key in word_record:
         word_info=word_dict_root.getwordinfo(key)
-        if word_info!=None:
-            if 'weight' in word_info:
-                main_weight+=1e4/word_info['weight']
+        if word_info:
+            weight=word_info.get('weight',0)
+            main_weight+=weight*word_record[key]
 
-    weibo_reply_list=[]
+    if main_weight<100:
+        return []
     weibo_id_count={}
     for key in word_record:
         dbc.execute("select weibo_id,times from all_word where word=?",(key,))
-        for resline in dbc:
-            if resline[0] in weibo_id_count:
-                weibo_id_count[resline[0]]+=resline[1];
+        word_info=word_dict_root.getwordinfo(key)
+        if word_info==None:
+            continue
+        weight=word_info.get('weight',0 )
+        for weibo_id,times in dbc:
+            if weibo_id in weibo_id_count:
+                weibo_id_count[weibo_id]+=min(2,times)*weight;
             else:
-                weibo_id_count[resline[0]]=resline[1];
+                weibo_id_count[weibo_id]=min(2,times)*weight;
 
-    max_count=0
-    for id in weibo_id_count:
-        count=weibo_id_count[id]
-        if max_count<count:
-            max_count=count
+    if len(weibo_id_count)==0:
+        return []
+    close_weight=1e4
+    for one_weight in weibo_id_count.values():
+        if abs(close_weight-main_weight)>abs(one_weight-main_weight):
+            close_weight=one_weight
     max_weibo_id=[]
     for id in weibo_id_count:
         count=weibo_id_count[id]
-        if count==max_count:
+        if count==close_weight:
             max_weibo_id.append(id)
+
+    maybe_replyids=[]
     if len(max_weibo_id)>0:
         for weibo_id in max_weibo_id:
-            dbc.execute('select word from all_weibo where weibo_id=?',(weibo_id,))
-            for resrow in dbc:
-                print "==",resrow[0]
-            dbc.execute("select word from all_weibo where reply_id=?",(weibo_id,))
-            for resrow in dbc:
-                word=RemoveWeiboRubbish(resrow[0])
-                if len(word)>0:
-                    weibo_reply_list.append(word)
+            dbc.execute("select weibo_id from all_weibo where reply_id=?",(weibo_id,))
+            for weibo_id2, in dbc:
+                maybe_replyids.append(weibo_id2)
 
+    dbc.execute('select word,weibo_id,times from all_word where weibo_id in (%s)'%(','.join(map(str,maybe_replyids))))
+    asw_wights={}
+    for word,weibo_id,times in dbc:
+        word_info=word_dict_root.getwordinfo(word)
+        if word_info==None:
+            continue
+        weight=word_info.get('weight',0 )
+        if weibo_id in asw_wights:
+            asw_wights[weibo_id]+=min(2,times)*weight
+        else:
+            asw_wights[weibo_id]=min(2,times)*weight
+    if len(asw_wights)==0:
+        return []
+    asw_ave_weight=DoubleAve(asw_wights.values())
+
+    asw_weights=[(key,asw_wights[key]) for key in asw_wights]
+    asw_weights.sort(lambda a,b:cmp(abs(asw_ave_weight-a[1]),abs(asw_ave_weight-b[1])))
+    asw_weights=asw_weights[0:5]
+
+    weibo_reply_list=[]
+    for weibo_id,weight in asw_weights:
+        dbc.execute('select word from all_weibo where weibo_id=?',(weibo_id,))
+        for resrow in dbc:
+            print "req:",resrow[0]
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=0
+    debug_mode=1
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'
@@ -147,24 +179,20 @@ if __name__ == '__main__':
         status=line['status'];
         weibo_word=line['text']
 
-        weibo_word=re.sub(u"\/*((回复)?@[^\s:]*)[:\s\/]*","",weibo_word)
-        weibo_word=re.sub(u"\[[^\]]*\]","",weibo_word)
+        weibo_word=RemoveWeiboRubbish(weibo_word)
         if len(weibo_word)==0:
             continue
-        if re.search(u"\w{0,5}://[\w\d./]*",weibo_word,re.I):
-            continue
-        if re.search(u"转发",weibo_word,re.I):
-            continue
+        print '------------------------------------------------------------'
+        print 'src:',weibo_word
         weibo_reply_list=FindReplyForSentence(word_dict_root,searchdb,weibo_word)
 
         if len(weibo_reply_list)>0:
-            print weibo_word
             if debug_mode==0:
                 weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
-                print '>>',weibo_reply
+                print 'asw:',weibo_reply
             else:
                 for wr in weibo_reply_list:
-                    print '>>',wr
+                    print 'asw:',wr
             try:
                 if debug_mode==0:
                     sub_user=sub_users[random.randint(0,len(sub_users)-1)]
@@ -173,58 +201,3 @@ if __name__ == '__main__':
                 pass
             except Exception,e:
                 print e
-    exit()
-    for sub_user in sub_users:
-        dbc=dbbot.cursor()
-        sub_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,sub_user[0],sub_user[1])
-        comment_since_id=0
-        dbc=dbbot.cursor()
-        dbc.execute("select last_comment from last_proc_comment where user_name=?",(sub_user[0],))
-        resrow=dbc.fetchone()
-        if resrow!=None:
-            comment_since_id=resrow[0]
-        if debug_mode==1:
-            comment_since_id=0
-        wres=sub_client.comments__to_me(count=80,since_id=comment_since_id)
-
-        if wres.has_key('comments'):
-            comments=wres['comments']
-            if len(comments)>0:
-                last_comment=comments[0]
-                if debug_mode==0:
-                    dbc=dbbot.cursor()
-                    dbc.execute("replace into last_proc_comment(user_name,last_comment) values(?,?)",(sub_user[0],last_comment['id']))
-                    dbbot.commit()
-        else:
-            comments=[]
-
-        for line in comments:
-            if line['user']['id'] in bot_id_set:
-                continue
-            status=line['status'];
-            weibo_word=line['text']
-
-            weibo_word=re.sub(u"\/*((回复)?@[^\s:]*)[:\s\/]*","",weibo_word)
-            weibo_word=re.sub(u"\[[^\]]*\]","",weibo_word)
-            if len(weibo_word)==0:
-                continue
-            if re.search(u"\w{0,5}://[\w\d./]*",weibo_word,re.I):
-                continue
-            if re.search(u"转发",weibo_word,re.I):
-                continue
-            weibo_reply_list=FindReplyForSentence(word_dict_root,searchdb,weibo_word)
-
-            if len(weibo_reply_list)>0:
-                print weibo_word
-                if debug_mode==0:
-                    weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
-                    print '>>',weibo_reply
-                else:
-                    for wr in weibo_reply_list:
-                        print '>>',wr
-                try:
-                    if debug_mode==0:
-                        wbres=sub_client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
-                    pass
-                except Exception,e:
-                    print e

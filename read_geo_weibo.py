@@ -91,7 +91,7 @@ if __name__ == '__main__':
             max_id=0
             has_req_error=False
             page=1
-            while page < 11:
+            while page < 51:
                 try:
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
                     print 'read_page',page
