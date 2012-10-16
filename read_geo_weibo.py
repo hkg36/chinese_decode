@@ -6,14 +6,12 @@ from datetime import datetime
 import urllib2
 import os
 import pymongo
+import mongo_warps
 import weibo_api
-import random
-import math
 try:
     import ujson as json
 except:
     import json
-
 
 if __name__ == '__main__':
     APP_KEY = '2824743419'
@@ -22,7 +20,7 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
-    con=pymongo.Connection('218.241.207.46',27017)
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
     weibo_list=con.weibolist
     weibo_l_w=weibo_list.weibo
     weibo_l_u=weibo_list.user
@@ -167,16 +165,10 @@ if __name__ == '__main__':
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
             if len(weiboslist)>0:
-                try:
-                    weibo_l_w.insert(weiboslist.values())
-                except Exception,e:
-                    print 'insert fail',e
+                weibo_l_w.insert(weiboslist.values())
 
             if len(userslist):
-                try:
-                    weibo_l_u.insert(userslist.values())
-                except Exception,e:
-                    print 'insert fail',e
+                weibo_l_u.insert(userslist.values())
 
             if has_req_error==False:
                 if total_number>0:

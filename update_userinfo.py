@@ -1,14 +1,12 @@
 #-*-coding:utf-8-*-
 import pymongo
-import sqlite3
-import json
+import pymongo.errors
 import weibo_tools
-import weibo_api
 import time
 import urllib2
 
 if __name__ == '__main__':
-    con=pymongo.Connection('218.241.207.46',27017)
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
     weibo_list=con.weibolist
     weibo_l_u=weibo_list.user
 
@@ -42,8 +40,14 @@ if __name__ == '__main__':
                 if 'ids' in friend_res:
                     ids=friend_res['ids']
                     newdata['friend_list']=ids
-
-                weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
+                while True:
+                    try:
+                        weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
+                        break
+                    except pymongo.errors.AutoReconnect,e:
+                        print 'wait reconnect'
+                        time.sleep(5)
+                        continue
             except urllib2.HTTPError,e:
                 if e.code==400:
                     data['is_full_info']=-1

@@ -3,6 +3,7 @@ import time
 import urllib2
 from datetime import datetime
 import pymongo
+import mongo_warps
 import weibo_api
 import random
 if __name__ == '__main__':
@@ -12,7 +13,7 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
-    con=pymongo.Connection('218.241.207.46',27017)
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
     weibo_list=con.weibolist
     weibo_l_w=weibo_list.weibo
     weibo_l_u=weibo_list.user
@@ -88,7 +89,7 @@ if __name__ == '__main__':
                 weibo_l_w.insert(weiboslist.values())
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
-                print '%d read success'%weibo_user['id']
+                print '%d read success (%d) from (%d)'%(weibo_user['id'],len(weiboslist),last_geo_check_id)
             else:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time}})
                 print weibo_user['id'],'read fail'
