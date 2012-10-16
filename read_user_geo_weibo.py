@@ -3,7 +3,6 @@ import time
 import urllib2
 from datetime import datetime
 import pymongo
-import mongo_warps
 import weibo_api
 import random
 if __name__ == '__main__':
@@ -38,6 +37,7 @@ if __name__ == '__main__':
                 except urllib2.HTTPError,e:
                     print e
                     if e.code==403:
+                        print e
                         time.sleep(5)
                     break
                 except weibo_api.APIError,e:

@@ -6,7 +6,7 @@ from datetime import datetime
 import urllib2
 import os
 import pymongo
-import mongo_warps
+import pymongo.errors
 import weibo_api
 try:
     import ujson as json
@@ -21,9 +21,6 @@ if __name__ == '__main__':
     user_psw = 'xianchangjia'
 
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
-    weibo_list=con.weibolist
-    weibo_l_w=weibo_list.weibo
-    weibo_l_u=weibo_list.user
 
     if not os.path.exists("GeoData"):
         os.mkdir("GeoData")
@@ -165,10 +162,24 @@ if __name__ == '__main__':
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
             if len(weiboslist)>0:
-                weibo_l_w.insert(weiboslist.values())
+                while True:
+                    try:
+                        con.weibolist.weibo.insert(weiboslist.values())
+                        break
+                    except pymongo.errors.AutoReconnect,e:
+                        print 'reconnect'
+                        time.sleep(5)
+                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
 
             if len(userslist):
-                weibo_l_u.insert(userslist.values())
+                while True:
+                    try:
+                        con.weibolist.user.insert(userslist.values())
+                        break
+                    except pymongo.errors.AutoReconnect,e:
+                        print 'reconnect'
+                        time.sleep(5)
+                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
 
             if has_req_error==False:
                 if total_number>0:
