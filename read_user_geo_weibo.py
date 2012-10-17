@@ -4,6 +4,7 @@ import urllib2
 from datetime import datetime
 import pymongo
 import weibo_api
+import re
 import random
 if __name__ == '__main__':
     APP_KEY = '2824743419'
@@ -70,6 +71,9 @@ if __name__ == '__main__':
                     max_id=max(max_id,id)
                     text=line['text']
                     uid=user['id']
+                    source=line.get('source')
+                    if source:
+                        source=re.sub(r'</?\w+[^>]*>','',source)
                     created_at=line['created_at']
                     #Tue Dec 07 21:18:14 +0800 2010
                     c_time=datetime.strptime(created_at,"%a %b %d %H:%M:%S +0800 %Y")
@@ -82,6 +86,8 @@ if __name__ == '__main__':
                         data["bmiddle_pic"]=line['bmiddle_pic']
                     if "original_pic" in line:
                         data["original_pic"]=line['original_pic']
+                    if source:
+                        data['source']=source
                     #weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
                     weiboslist[data['weibo_id']]=data
                 page+=1
