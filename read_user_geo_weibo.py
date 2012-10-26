@@ -22,15 +22,21 @@ if __name__ == '__main__':
         client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 
         before_time=time.time()-60*60*24
-        cur=weibo_l_u.find({'$or':[{'last_geo_check':None},{'last_geo_check':{'$lt':before_time}}]}).sort([('last_geo_check',1)]).limit(50)
-        for weibo_user in cur:
-            last_geo_check_id=0
-            if 'last_geo_check_id' in weibo_user:
-                last_geo_check_id=weibo_user['last_geo_check_id']
+        user_to_check={}
+        cur=weibo_l_u.find({'last_geo_check':{'$exists':False}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).limit(200)
+        for line in cur:
+            user_to_check[line['id']]=line
+        if len(user_to_check)==0:
+            cur=weibo_l_u.find({'last_geo_check':{'$lt':before_time}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).sort([('last_geo_check',1)]).limit(200)
+            for line in cur:
+                user_to_check[line['id']]=line
+
+        for weibo_user in user_to_check.values():
+            last_geo_check_id=weibo_user.get('last_geo_check_id',0)
             page=1
 
             max_id=0
-            weiboslist={}
+            weibo_count=0
             while True:
                 start_check_time=time.time()
                 try:
@@ -67,6 +73,7 @@ if __name__ == '__main__':
                         lng=geo['coordinates'][1]
                     else:
                         continue
+                    weibo_count+=1
                     id=int(line['id'])
                     max_id=max(max_id,id)
                     text=line['text']
@@ -88,14 +95,14 @@ if __name__ == '__main__':
                         data["original_pic"]=line['original_pic']
                     if source:
                         data['source']=source
-                    #weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
-                    weiboslist[data['weibo_id']]=data
+                    weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
+                    #weiboslist[data['weibo_id']]=data
                 page+=1
-            if len(weiboslist)>0:
-                weibo_l_w.insert(weiboslist.values())
+            #if len(weiboslist)>0:
+                #weibo_l_w.insert(weiboslist.values())
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
-                print '%d read success (%d) from (%d)'%(weibo_user['id'],len(weiboslist),last_geo_check_id)
+                print '%d read success (%d) from (%d)'%(weibo_user['id'],weibo_count,last_geo_check_id)
             else:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time}})
-                print weibo_user['id'],'read fail'
+                print '%d fail from (%d)'%(weibo_user['id'],last_geo_check_id)

@@ -41,10 +41,10 @@ def parseHeaders(header_file):
     return headers
 
 def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
-    class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
+    """class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
         def http_error_302(self, req, fp, code, msg, headers):
             raise urllib2.HTTPError(req.get_full_url(),code,msg,headers,fp)
-    opener = urllib2.build_opener(MyHTTPRedirectHandler)
+    opener = urllib2.build_opener(MyHTTPRedirectHandler)"""
 
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET, redirect_uri=CALLBACK_URL)
     url_1 = client.get_authorize_url()

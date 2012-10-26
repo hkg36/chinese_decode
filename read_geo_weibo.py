@@ -155,19 +155,19 @@ if __name__ == '__main__':
                         data["original_pic"]=line['original_pic']
                     if source:
                         data['source']=source
-                    #weibo_l_w.update({"weibo_id":int(id)},data,upsert=True)
-                    weiboslist[data['weibo_id']]=data
+                    con.weibolist.weibo.update({"weibo_id":int(id)},data,upsert=True)
+                    #weiboslist[data['weibo_id']]=data
 
                     data=user
                     data['is_full_info']=0
                     data['time']=readtime
                     data['id']=int(data['id'])
-                    #weibo_l_u.insert(data)
-                    userslist[data['id']]=data
+                    con.weibolist.user.insert(data)
+                    #userslist[data['id']]=data
                 if not_go_next_page:
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
-            if len(weiboslist)>0:
+            """if len(weiboslist)>0:
                 while True:
                     try:
                         con.weibolist.weibo.insert(weiboslist.values())
@@ -185,7 +185,7 @@ if __name__ == '__main__':
                     except pymongo.errors.AutoReconnect,e:
                         print 'reconnect'
                         time.sleep(5)
-                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
+                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')"""
 
             if has_req_error==False:
                 if total_number>0:
