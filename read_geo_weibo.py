@@ -59,7 +59,7 @@ if __name__ == '__main__':
             if last_checkcount==0:
                 if this_span>30*60:
                     go_check=True
-            elif this_span>60*60:
+            elif this_span>24*60*60:
                 go_check=True
             elif last_checkspan==0:
                 go_check=True
@@ -87,7 +87,7 @@ if __name__ == '__main__':
             max_id=0
             has_req_error=False
             page=1
-            while page < 51:
+            while page <= 50:
                 try:
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
                     print 'read_page',page
@@ -155,37 +155,23 @@ if __name__ == '__main__':
                         data["original_pic"]=line['original_pic']
                     if source:
                         data['source']=source
-                    con.weibolist.weibo.update({"weibo_id":int(id)},data,upsert=True)
-                    #weiboslist[data['weibo_id']]=data
+                    #con.weibolist.weibo.update({"weibo_id":data['weibo_id'],data,upsert=True)
+                    weiboslist[data['weibo_id']]=data
 
                     data=user
                     data['is_full_info']=0
                     data['time']=readtime
                     data['id']=int(data['id'])
-                    con.weibolist.user.insert(data)
-                    #userslist[data['id']]=data
+                    #con.weibolist.user.insert(data)
+                    userslist[data['id']]=data
                 if not_go_next_page:
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
-            """if len(weiboslist)>0:
-                while True:
-                    try:
-                        con.weibolist.weibo.insert(weiboslist.values())
-                        break
-                    except pymongo.errors.AutoReconnect,e:
-                        print 'reconnect'
-                        time.sleep(5)
-                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
 
-            if len(userslist):
-                while True:
-                    try:
-                        con.weibolist.user.insert(userslist.values())
-                        break
-                    except pymongo.errors.AutoReconnect,e:
-                        print 'reconnect'
-                        time.sleep(5)
-                        con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')"""
+            for data in weiboslist.values():
+                con.weibolist.weibo.update({"weibo_id":data['weibo_id']},{'$set':data},upsert=True)
+            for data in userslist.values():
+                con.weibolist.user.insert(data)
 
             if has_req_error==False:
                 if total_number>0:
@@ -195,5 +181,3 @@ if __name__ == '__main__':
                     pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
                         (readtime,total_number,readtime-pos['last_checktime'],pos['id']))
                 pos_db.commit()
-            else:
-                time.sleep(20)

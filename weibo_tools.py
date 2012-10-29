@@ -41,11 +41,6 @@ def parseHeaders(header_file):
     return headers
 
 def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
-    """class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
-        def http_error_302(self, req, fp, code, msg, headers):
-            raise urllib2.HTTPError(req.get_full_url(),code,msg,headers,fp)
-    opener = urllib2.build_opener(MyHTTPRedirectHandler)"""
-
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET, redirect_uri=CALLBACK_URL)
     url_1 = client.get_authorize_url()
 
@@ -55,35 +50,12 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         'action': 'submit',
         'client_id': APP_KEY,
         'display': 'mobile',
-        'offcialMobile': 'null',
         'passwd': user_psw,
         'redirect_uri': CALLBACK_URL,
         'response_type': 'code',
-        'userId': user_name,
-        'withOfficalFlag': 0,
+        'userId': user_name
         }
     reqstring=urllib.urlencode(reqdata)
-    """reqheader={
-        'Accept-encoding':'gzip',
-        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1)',
-        'Referer':url_1,
-        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language':'zh-cn,en-us;q=0.7,en;q=0.3',
-        }
-
-    request = urllib2.Request(url,reqstring,reqheader)
-    res_location=None
-    try:
-        response = opener.open(request, timeout=20)
-    except urllib2.HTTPError,redirError:
-        res_location=redirError.hdrs['Location']
-    if res_location!=None:
-        re_res = re.search('\?code=(\w*)', res_location, re.IGNORECASE)
-        if re_res != None:
-            oauth_code = re_res.group(1)
-        else:
-            oauth_code = None"""
-
     reqheader=[
         'Accept-encoding:gzip',
         'User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1)',
@@ -119,8 +91,6 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     if oauth_code!=None:
         client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
         r = client.request_access_token(oauth_code)
-        #client.set_access_token(r['access_token'], r['expires_in'])
-        #uid=string.atoi(r['uid'])
     return r
 def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     db=sqlite3.connect("data/weibo_word_base.db")
@@ -141,13 +111,11 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     db.close()
     return client
 if __name__ == '__main__':
-    APP_KEY = '2117816058'
-    APP_SECRET = '80f6fac494eed2f4e8a54acb85683aea'
-    CALLBACK_URL = 'http://ljnh.sinaapp.com/index.php/girl/sinacallback'
-    """APP_KEY = '685427335'
-    APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
-    CALLBACK_URL = 'http://www.hkg36.tk/weibo/authorization'"""
-    user_name = '878260705@qq.com'
+    APP_KEY = '2824743419'
+    APP_SECRET = '9c152c876ec980df305d54196539773f'
+    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
+    user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
     oauth=GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+    print json.dumps(oauth)
