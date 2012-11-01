@@ -21,8 +21,6 @@ if __name__ == '__main__':
     user_name = '496642325@qq.com'
     user_psw = 'xianchangjia'
 
-    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
-
     if not os.path.exists("GeoData"):
         os.mkdir("GeoData")
     db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -168,10 +166,12 @@ if __name__ == '__main__':
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
 
+            con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
             for data in weiboslist.values():
-                con.weibolist.weibo.update({"weibo_id":data['weibo_id']},{'$set':data},upsert=True)
+                con.weibolist.weibo.insert(data)
             for data in userslist.values():
                 con.weibolist.user.insert(data)
+            con.close()
 
             if has_req_error==False:
                 if total_number>0:

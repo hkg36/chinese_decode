@@ -102,7 +102,7 @@ if __name__ == '__main__':
             #if len(weiboslist)>0:
                 #weibo_l_w.insert(weiboslist.values())
             for data in weiboslist.values():
-                weibo_l_w.update({"weibo_id":data['weibo_id']},{'$set':data},upsert=True)
+                weibo_l_w.insert(data)
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
                 print '%d read success (%d) from (%d)'%(weibo_user['id'],weibo_count,last_geo_check_id)
