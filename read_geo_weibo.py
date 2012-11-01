@@ -14,6 +14,48 @@ try:
 except:
     import json
 
+def SplitWeiboInfo(line):
+    if not 'user' in line:
+        return None
+    user=line['user']
+    geo=line['geo']
+    if geo==None:
+        return None
+    if geo['type']=="Point":
+        lat=geo['coordinates'][0]
+        lng=geo['coordinates'][1]
+    else:
+        return None
+
+    text=line['text']
+    uid=user['id']
+    source=line.get('source')
+    if source:
+        source=re.sub(r'</?\w+[^>]*>','',source)
+    created_at=line['created_at']
+    #Tue Dec 07 21:18:14 +0800 2010
+    c_time=datetime.strptime(created_at,"%a %b %d %H:%M:%S +0800 %Y")
+    u_time=time.mktime(c_time.timetuple())
+    u_time-=8*3600
+    data={"weibo_id":int(line['id']),"uid":int(uid),"pos":{"lat":float(lat),"lng":float(lng)},"time":int(u_time),"word":text}
+    if 'thumbnail_pic' in line:
+        data["thumbnail_pic"]=line['thumbnail_pic']
+    if "bmiddle_pic" in line:
+        data["bmiddle_pic"]=line['bmiddle_pic']
+    if "original_pic" in line:
+        data["original_pic"]=line['original_pic']
+    if source:
+        data['source']=source
+        #con.weibolist.weibo.update({"weibo_id":data['weibo_id'],data,upsert=True)
+    #weiboslist[data['weibo_id']]=data
+
+    user['is_full_info']=0
+    user['time']=readtime
+    user['id']=int(user['id'])
+    #con.weibolist.user.insert(data)
+    #userslist[data['id']]=data
+    return (data,user)
+
 if __name__ == '__main__':
     APP_KEY = '2824743419'
     APP_SECRET = '9c152c876ec980df305d54196539773f'
@@ -117,56 +159,23 @@ if __name__ == '__main__':
 
                 not_go_next_page=False
                 for line in statuses:
-                    if not 'user' in line:
+                    line_info=SplitWeiboInfo(line)
+                    if line_info==None:
                         continue
-                    user=line['user']
-                    geo=line['geo']
-                    if geo==None:
-                        continue
-                    if geo['type']=="Point":
-                        lat=geo['coordinates'][0]
-                        lng=geo['coordinates'][1]
-                    else:
-                        continue
-                    id=int(line['id'])
-                    max_id=max(max_id,id)
-                    text=line['text']
-                    uid=user['id']
-                    source=line.get('source')
-                    if source:
-                        source=re.sub(r'</?\w+[^>]*>','',source)
-                    created_at=line['created_at']
-                    #Tue Dec 07 21:18:14 +0800 2010
-                    c_time=datetime.strptime(created_at,"%a %b %d %H:%M:%S +0800 %Y")
-                    u_time=time.mktime(c_time.timetuple())
-                    u_time-=8*3600
-                    if id<last_weibo_id:
+                    data,user=line_info
+                    max_id=max(max_id,data["weibo_id"])
+                    if data["weibo_id"]<last_weibo_id:
                         not_go_next_page=True
                     else:
                         total_number+=1
-                    data={"weibo_id":int(id),"uid":int(uid),"pos":{"lat":float(lat),"lng":float(lng)},"time":int(u_time),"word":text}
-                    if 'thumbnail_pic' in line:
-                        data["thumbnail_pic"]=line['thumbnail_pic']
-                    if "bmiddle_pic" in line:
-                        data["bmiddle_pic"]=line['bmiddle_pic']
-                    if "original_pic" in line:
-                        data["original_pic"]=line['original_pic']
-                    if source:
-                        data['source']=source
-                    #con.weibolist.weibo.update({"weibo_id":data['weibo_id'],data,upsert=True)
                     weiboslist[data['weibo_id']]=data
+                    userslist[user['id']]=user
 
-                    data=user
-                    data['is_full_info']=0
-                    data['time']=readtime
-                    data['id']=int(data['id'])
-                    #con.weibolist.user.insert(data)
-                    userslist[data['id']]=data
                 if not_go_next_page:
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
 
-            con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
+            con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.PRIMARY)
             for data in weiboslist.values():
                 con.weibolist.weibo.insert(data)
             for data in userslist.values():
