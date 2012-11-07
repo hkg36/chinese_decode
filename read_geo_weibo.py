@@ -6,7 +6,7 @@ from datetime import datetime
 import urllib2
 import os
 import pymongo
-import pymongo.errors
+import mongo_autoreconnect
 import weibo_api
 import re
 try:
@@ -50,19 +50,13 @@ def SplitWeiboInfo(line):
     #weiboslist[data['weibo_id']]=data
 
     user['is_full_info']=0
-    user['time']=readtime
+    user['time']=time.time()
     user['id']=int(user['id'])
     #con.weibolist.user.insert(data)
     #userslist[data['id']]=data
     return (data,user)
 
 if __name__ == '__main__':
-    APP_KEY = '2824743419'
-    APP_SECRET = '9c152c876ec980df305d54196539773f'
-    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
-    user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
-
     if not os.path.exists("GeoData"):
         os.mkdir("GeoData")
     db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -116,7 +110,7 @@ if __name__ == '__main__':
             time.sleep(20)
             continue
 
-        client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+        client = weibo_tools.DefaultWeiboClient()
         userslist={}
         weiboslist={}
         for pos in pos_to_record:

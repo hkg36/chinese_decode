@@ -4,6 +4,7 @@ import sqlite3
 import time
 import traceback
 from STTrans import STTrans
+import mongo_autoreconnect
 
 fetch_time=0
 def ReadUserWeibo(client):
@@ -100,13 +101,6 @@ def RecheckComment(client):
     db.commit()
 
 if __name__ == '__main__':
-
-    APP_KEY = '2824743419'
-    APP_SECRET = '9c152c876ec980df305d54196539773f'
-    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
-    user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
-
     db=sqlite3.connect("data/weibo_word_base.db")
     try:
         db.execute("create table weibo_oauth(app_key varchar(32) not null,user_name varchar(32) not null,weibo_id varchar(32) not null,key varchar(30) not null,expires_time int not null,PRIMARY KEY(app_key,user_name))")
@@ -136,7 +130,7 @@ if __name__ == '__main__':
     db.close()
 
     while True:
-        client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+        client = weibo_tools.DefaultWeiboClient()
         try:
             ReadUserWeibo(client)
             RecheckComment(client)

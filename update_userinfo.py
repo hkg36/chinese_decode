@@ -4,23 +4,17 @@ import pymongo.errors
 import weibo_tools
 import time
 import urllib2
-
+import mongo_autoreconnect
 if __name__ == '__main__':
-    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
+    con=pymongo.Connection('mongodb://xcj.server4/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
     weibo_l_u=weibo_list.user
-
-    APP_KEY = '2824743419'
-    APP_SECRET = '9c152c876ec980df305d54196539773f'
-    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
-    user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
-    client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 
     FullInfoVersion=2
     while True:
         cur=weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
-            ,{"is_full_info":{'$ne':-1}}]},{'id':1}).limit(20)
+            ,{"is_full_info":{'$ne':-1}}]},{'id':1}).limit(50)
+        client = weibo_tools.DefaultWeiboClient()
         users=[]
         for data in cur:
             users.append(data)
@@ -31,8 +25,7 @@ if __name__ == '__main__':
             try:
                 newdata=client.users__show(uid=data['id'])
                 print data['id']
-                if 'status' in newdata:
-                    del newdata['status']
+                status=newdata.pop('status')
                 tags=client.tags(uid=data['id'],count=200)
                 newdata['tags']=tags
                 newdata["is_full_info"]=FullInfoVersion

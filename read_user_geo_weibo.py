@@ -1,25 +1,19 @@
 import weibo_tools
 import time
 import urllib2
-from datetime import datetime
+import mongo_autoreconnect
 import pymongo
 import weibo_api
 import re
 import read_geo_weibo
 if __name__ == '__main__':
-    APP_KEY = '2824743419'
-    APP_SECRET = '9c152c876ec980df305d54196539773f'
-    CALLBACK_URL = 'http://livep.sinaapp.com/mobile/weibo2/callback.php'
-    user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
-
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
     weibo_list=con.weibolist
     weibo_l_w=weibo_list.weibo
     weibo_l_u=weibo_list.user
 
     while True:
-        client = weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+        client = weibo_tools.DefaultWeiboClient()
 
         before_time=time.time()-60*60*24
         user_to_check={}
