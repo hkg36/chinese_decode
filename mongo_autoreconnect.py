@@ -9,9 +9,6 @@ def reconnect(f):
             except pymongo.errors.AutoReconnect, e:
                 print('Fail to execute %s [%s]' % (f.__name__, e))
                 sleep(0.1)
-            except Exception,e:
-                print('Fail(2) to execute %s [%s]' % (f.__name__, e))
-                sleep(20)
     return f_retry
 pymongo.cursor.Cursor._Cursor__send_message =\
 reconnect(pymongo.cursor.Cursor._Cursor__send_message)
