@@ -7,10 +7,7 @@ import urllib
 import re
 import pycurl
 from cStringIO import StringIO
-try:
-    import ujson as json
-except :
-    import json
+import json
 
 def parseHeaders(header_file):
     header_file.seek(0)
@@ -77,6 +74,7 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     curl.setopt(pycurl.ENCODING,"gzip,deflate")
     curl.perform()
     b.seek(0)
+    curl.close()
 
     oauth_code=None
     if curl.getinfo(pycurl.HTTP_CODE)==302:
@@ -109,6 +107,7 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         db.commit()
         client.set_access_token(oauth['access_token'], oauth['expires_in'])
         client.user_id=oauth['uid']
+    dbc.close()
     db.close()
     return client
 def DefaultWeiboClient():

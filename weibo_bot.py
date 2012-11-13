@@ -4,11 +4,8 @@ import sqlite3
 import time
 from decoder import *
 import random
+import json
 
-try:
-    import ujson as json
-except :
-    import json
 def FindWordCount(word_dict_root,word):
     """
     分解句子并统计词语出现次数

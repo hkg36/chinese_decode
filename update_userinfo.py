@@ -5,8 +5,9 @@ import weibo_tools
 import time
 import urllib2
 import mongo_autoreconnect
+import gc
 if __name__ == '__main__':
-    con=pymongo.Connection('mongodb://xcj.server4/',read_preference=pymongo.ReadPreference.SECONDARY)
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
     weibo_l_u=weibo_list.user
 

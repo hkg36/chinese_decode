@@ -9,6 +9,7 @@ import pymongo
 import mongo_autoreconnect
 import weibo_api
 import re
+import gc
 try:
     import ujson as json
 except:

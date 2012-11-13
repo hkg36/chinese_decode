@@ -6,6 +6,7 @@ import pymongo
 import weibo_api
 import re
 import read_geo_weibo
+import objgraph
 if __name__ == '__main__':
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/')
     weibo_list=con.weibolist
@@ -13,19 +14,21 @@ if __name__ == '__main__':
     weibo_l_u=weibo_list.user
 
     while True:
+        objgraph.show_growth(limit=20)
+        print '-------------------------------------------------------------------------'
         client = weibo_tools.DefaultWeiboClient()
 
         before_time=time.time()-60*60*24
-        user_to_check={}
+        user_to_check=[]
         cur=weibo_l_u.find({'last_geo_check':{'$exists':False}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).limit(200)
         for line in cur:
-            user_to_check[line['id']]=line
+            user_to_check.append(line)
         if len(user_to_check)==0:
             cur=weibo_l_u.find({'last_geo_check':{'$lt':before_time}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).sort([('last_geo_check',1)]).limit(200)
             for line in cur:
-                user_to_check[line['id']]=line
+                user_to_check.append(line)
 
-        for weibo_user in user_to_check.values():
+        for weibo_user in user_to_check:
             last_geo_check_id=weibo_user.get('last_geo_check_id',0)
             page=1
 
@@ -39,7 +42,7 @@ if __name__ == '__main__':
                 except urllib2.HTTPError,e:
                     print e
                     if e.code==403:
-                        print e
+                        #print e
                         time.sleep(5)
                     break
                 except weibo_api.APIError,e:
@@ -72,7 +75,7 @@ if __name__ == '__main__':
                 weibo_l_w.insert(data)
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
-                print '%d read success (%d) from (%d)'%(weibo_user['id'],weibo_count,last_geo_check_id)
+                #print '%d read success (%d) from (%d)'%(weibo_user['id'],weibo_count,last_geo_check_id)
             else:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time}})
-                print '%d fail from (%d)'%(weibo_user['id'],last_geo_check_id)
+                #print '%d fail from (%d)'%(weibo_user['id'],last_geo_check_id)

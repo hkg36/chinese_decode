@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-try:
-    import ujson as json
-except ImportError:
-    import json
+import json
 import time
 import urllib
 import urllib2
 import logging
 import pycurl
-from cStringIO import StringIO
+from StringIO import StringIO
 
 API_RemoteIP=None
 
@@ -117,6 +114,8 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.perform()
+    if curl.getinfo(pycurl.HTTP_CODE)!=200:
+        raise Exception('HTTP request fail')
     b.seek(0)
 
     """req = urllib2.Request(http_url, data=http_body)
