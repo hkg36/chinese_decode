@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+try:
+    import ujson as json
+except ImportError,e:
+    import json
 
-import json
 import time
 import urllib
 import urllib2
 import logging
 import pycurl
-from StringIO import StringIO
+from cStringIO import StringIO
 
 API_RemoteIP=None
 
@@ -80,6 +83,10 @@ def _http_post(url, authorization=None, **kw):
 def _http_upload(url, authorization=None, **kw):
     logging.info('MULTIPART POST %s' % url)
     return _http_call(url, _HTTP_UPLOAD, authorization, **kw)
+class WeiboRequestFail(Exception):
+    def __init__(self,httpcode,msg):
+        self.httpcode=httpcode
+        Exception.__init__(msg)
 
 def _http_call(url, method, authorization, **kw):
     '''
@@ -115,7 +122,7 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.perform()
     if curl.getinfo(pycurl.HTTP_CODE)!=200:
-        raise Exception('HTTP request fail')
+        raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),'HTTP request fail')
     b.seek(0)
 
     """req = urllib2.Request(http_url, data=http_body)

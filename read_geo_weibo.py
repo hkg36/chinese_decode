@@ -10,6 +10,7 @@ import mongo_autoreconnect
 import weibo_api
 import re
 import gc
+import tools
 try:
     import ujson as json
 except:
@@ -80,8 +81,13 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.PRIMARY)
+
+    start_work_time=time.time()
     run_start_time=0
     while True:
+        if time.time()-start_work_time>60*60:
+            tools.RestartSelf()
         run_start_time=time.time()
 
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -170,12 +176,10 @@ if __name__ == '__main__':
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
 
-            con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.PRIMARY)
             for data in weiboslist.values():
                 con.weibolist.weibo.insert(data)
             for data in userslist.values():
                 con.weibolist.user.insert(data)
-            con.close()
 
             if has_req_error==False:
                 if total_number>0:

@@ -3,22 +3,28 @@ import pymongo
 import pymongo.errors
 import weibo_tools
 import time
-import urllib2
+import weibo_api
 import mongo_autoreconnect
 import gc
+import tools
 if __name__ == '__main__':
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
     weibo_l_u=weibo_list.user
 
+    start_work_time=time.time()
     FullInfoVersion=2
     while True:
+        if time.time()-start_work_time>60*60:
+            tools.RestartSelf()
         cur=weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
             ,{"is_full_info":{'$ne':-1}}]},{'id':1}).limit(50)
         client = weibo_tools.DefaultWeiboClient()
         users=[]
         for data in cur:
             users.append(data)
+        cur.close()
+
         if len(users)==0:
             time.sleep(60*60)
             continue
@@ -34,18 +40,11 @@ if __name__ == '__main__':
                 if 'ids' in friend_res:
                     ids=friend_res['ids']
                     newdata['friend_list']=ids
-                while True:
-                    try:
-                        weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
-                        break
-                    except pymongo.errors.AutoReconnect,e:
-                        print 'wait reconnect'
-                        time.sleep(5)
-                        continue
-            except urllib2.HTTPError,e:
-                if e.code==400:
+                weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
+            except weibo_api.WeiboRequestFail,e:
+                if e.httpcode==400:
                     data['is_full_info']=-1
                     weibo_l_u.update({'_id':data['_id']},{'$set':{'is_full_info':-1}})
                 print e,data['id']
             except Exception,e:
-                time.sleep(300)
+                time.sleep(1)
