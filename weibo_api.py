@@ -86,7 +86,7 @@ def _http_upload(url, authorization=None, **kw):
 class WeiboRequestFail(Exception):
     def __init__(self,httpcode,msg):
         self.httpcode=httpcode
-        Exception.__init__(msg)
+        Exception.__init__(self,msg)
 
 def _http_call(url, method, authorization, **kw):
     '''

@@ -8,7 +8,7 @@ import re
 import read_geo_weibo
 import tools
 if __name__ == '__main__':
-    con=pymongo.Connection('mongodb://xcj.server4/',read_preference=pymongo.ReadPreference.SECONDARY)
+    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
     weibo_l_w=weibo_list.weibo
     weibo_l_u=weibo_list.user
