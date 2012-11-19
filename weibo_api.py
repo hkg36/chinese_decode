@@ -87,6 +87,8 @@ class WeiboRequestFail(Exception):
     def __init__(self,httpcode,msg):
         self.httpcode=httpcode
         Exception.__init__(self,msg)
+    def __str__(self):
+        return '%d %s'%(self.httpcode,self.message)
 
 def _http_call(url, method, authorization, **kw):
     '''
@@ -122,7 +124,7 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.perform()
     if curl.getinfo(pycurl.HTTP_CODE)!=200:
-        raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),'HTTP request fail')
+        raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),b.getvalue())
     b.seek(0)
 
     """req = urllib2.Request(http_url, data=http_body)

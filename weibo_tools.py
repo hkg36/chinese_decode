@@ -74,7 +74,6 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     curl.setopt(pycurl.ENCODING,"gzip,deflate")
     curl.perform()
     b.seek(0)
-    curl.close()
 
     oauth_code=None
     if curl.getinfo(pycurl.HTTP_CODE)==302:
@@ -89,7 +88,10 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     if oauth_code!=None:
         client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
         r = client.request_access_token(oauth_code)
-    return r
+        return r
+    else:
+        print '%s account fail'%user_name
+        return None
 def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     db=sqlite3.connect("data/weibo_oauths.db")
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
