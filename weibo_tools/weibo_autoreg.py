@@ -1,5 +1,4 @@
 #-*-coding:utf-8-*-
-import weibo_api
 import sqlite3
 import time
 import urllib2
@@ -8,6 +7,7 @@ import re
 import pycurl
 from cStringIO import StringIO
 import json
+import weibo_api
 
 def parseHeaders(header_file):
     header_file.seek(0)

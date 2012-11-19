@@ -6,11 +6,10 @@ from datetime import datetime
 import urllib2
 import os
 import pymongo
-import mongo_autoreconnect
-import weibo_api
 import re
-import gc
 import tools
+from weibo_tools import weibo_api
+
 try:
     import ujson as json
 except:

@@ -1,12 +1,9 @@
 #-*-coding:utf-8-*-
 import pymongo
-import pymongo.errors
 import weibo_tools
 import time
-import weibo_api
-import mongo_autoreconnect
-import gc
 import tools
+
 if __name__ == '__main__':
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
@@ -41,7 +38,7 @@ if __name__ == '__main__':
                     ids=friend_res['ids']
                     newdata['friend_list']=ids
                 weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
-            except weibo_api.WeiboRequestFail,e:
+            except weibo_tools.WeiboRequestFail,e:
                 if e.httpcode==400:
                     data['is_full_info']=-1
                     weibo_l_u.update({'_id':data['_id']},{'$set':{'is_full_info':-1}})

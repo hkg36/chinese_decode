@@ -1,12 +1,10 @@
 import weibo_tools
 import time
 import urllib2
-import mongo_autoreconnect
 import pymongo
-import weibo_api
-import re
 import read_geo_weibo
 import tools
+
 if __name__ == '__main__':
     con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
