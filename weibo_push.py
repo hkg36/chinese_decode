@@ -14,8 +14,7 @@ if __name__ == '__main__':
         ['xcj11114@qq.com','xianchangjia'],
         ['414961260@qq.com','6581101'],
         ['ellvv2012@126.com','xianchangjia'],
-        ['xxggood2005@163.com','76119443%a'],
-        ['496642325@qq.com','xianchangjia']
+        ['xxggood2005@163.com','76119443%a']
     ]
 
     postword=[

@@ -6,6 +6,7 @@ import traceback
 from STTrans import STTrans
 import mongo_autoreconnect
 
+weibo_tools.InterfaceIP=['192.168.47.129']
 fetch_time=0
 def ReadUserWeibo(client):
     global fetch_time

@@ -8,7 +8,7 @@ import os
 import pymongo
 import re
 import tools
-from weibo_tools import weibo_api
+import env_data
 
 try:
     import ujson as json
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.PRIMARY)
+    con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.SECONDARY)
 
     start_work_time=time.time()
     run_start_time=0
@@ -132,12 +132,14 @@ if __name__ == '__main__':
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
                     print 'read_page',page
                     page+=1
-                except urllib2.HTTPError,e:
+                except weibo_tools.WeiboRequestFail,e:
                     print e
-                    if e.code==403:
+                    if e.httpcode==403:
                         has_req_error=True
+                    elif e.httpcode==503:
+                        continue
                     break
-                except weibo_api.APIError,e:
+                except weibo_tools.APIError,e:
                     print e
                     if e.error_code==10022:
                         has_req_error=True

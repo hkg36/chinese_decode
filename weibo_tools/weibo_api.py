@@ -7,12 +7,23 @@ except ImportError,e:
 
 import time
 import urllib
-import urllib2
+import socket
+import re
 import logging
 import pycurl
+import random
 from cStringIO import StringIO
 
 API_RemoteIP=None
+InterfaceIP=None
+
+def UseRandomLocalAddress():
+    names,aliases,ips = socket.gethostbyname_ex(socket.gethostname())
+    ips=[]
+    for ip in ips :
+        if not re.match('^(192.)|(10.)|(127.)',ip):
+            ips.append(ip)
+    InterfaceIP=ips
 
 class APIError(StandardError):
     '''
@@ -122,6 +133,11 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.WRITEFUNCTION, b.write)
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
     curl.setopt(pycurl.MAXREDIRS, 5)
+    if InterfaceIP:
+        if isinstance(InterfaceIP,list) and len(InterfaceIP)>0:
+            curl.setopt(pycurl.INTERFACE,InterfaceIP[random.randint[0,len(InterfaceIP)-1]])
+        elif (isinstance(InterfaceIP,str) or isinstance(InterfaceIP,unicode)) and len(InterfaceIP)>0:
+            curl.setopt(pycurl.INTERFACE,InterfaceIP)
     curl.perform()
     if curl.getinfo(pycurl.HTTP_CODE)!=200:
         raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),b.getvalue())

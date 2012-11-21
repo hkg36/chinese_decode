@@ -1,12 +1,12 @@
 import weibo_tools
 import time
-import urllib2
+import env_data
 import pymongo
 import read_geo_weibo
 import tools
 
 if __name__ == '__main__':
-    con=pymongo.Connection('mongodb://xcj.server4,xcj.server2/',read_preference=pymongo.ReadPreference.SECONDARY)
+    con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.SECONDARY)
     weibo_list=con.weibolist
     weibo_l_w=weibo_list.weibo
     weibo_l_u=weibo_list.user
@@ -41,13 +41,14 @@ if __name__ == '__main__':
                 start_check_time=time.time()
                 try:
                     w_res=client.place__user_timeline(uid=weibo_user['id'],since_id=last_geo_check_id,count=50,page=page)
-                except urllib2.HTTPError,e:
-                    print e
-                    if e.code==403:
-                        #print e
-                        time.sleep(5)
+                except weibo_tools.WeiboRequestFail,e:
+                    if e.httpcode==403:
+                        print e
+                        break
+                    elif e.httpcode==503:
+                        continue
                     break
-                except weibo_api.APIError,e:
+                except weibo_tools.APIError,e:
                     print e
                     if e.error_code==10022:
                         has_req_error=True
