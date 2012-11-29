@@ -64,6 +64,7 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     curl.setopt(pycurl.TIMEOUT, 20)
     curl.setopt(pycurl.HTTPHEADER,reqheader)
     curl.setopt(pycurl.POSTFIELDS,reqstring)
+    curl.setopt(pycurl.ENCODING,"gzip")
 
     b = StringIO()
     h = StringIO()

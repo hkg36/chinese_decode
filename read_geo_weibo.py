@@ -80,7 +80,7 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.SECONDARY)
+    con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
 
     start_work_time=time.time()
     run_start_time=0
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             page=1
             while page <= 50:
                 try:
-                    place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=5000,count=50,page=page,offset=1)
+                    place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
                     print 'read_page',page
                     page+=1
                 except weibo_tools.WeiboRequestFail,e:

@@ -97,9 +97,9 @@ def _http_upload(url, authorization=None, **kw):
 class WeiboRequestFail(Exception):
     def __init__(self,httpcode,msg):
         self.httpcode=httpcode
-        Exception.__init__(self,msg)
+        self.msg=msg
     def __str__(self):
-        return '%d %s'%(self.httpcode,self.message)
+        return '%d %s'%(self.httpcode,self.msg)
 
 def _http_call(url, method, authorization, **kw):
     '''
@@ -126,6 +126,7 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.URL,http_url)
     curl.setopt(pycurl.TIMEOUT, 20)
     curl.setopt(pycurl.HTTPHEADER,httpheaders)
+    curl.setopt(pycurl.ENCODING,"gzip")
     if http_body:
         curl.setopt(pycurl.POSTFIELDS,http_body)
 
