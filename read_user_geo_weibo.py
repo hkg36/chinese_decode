@@ -3,6 +3,7 @@ import time
 import env_data
 import pymongo
 import read_geo_weibo
+import mongo_autoreconnect
 import tools
 
 if __name__ == '__main__':
@@ -37,6 +38,7 @@ if __name__ == '__main__':
             max_id=0
             weibo_count=0
             weiboslist={}
+            userslist={}
             while True:
                 start_check_time=time.time()
                 try:
@@ -71,11 +73,25 @@ if __name__ == '__main__':
                     weibo_count+=1
 
                     weiboslist[data['weibo_id']]=data
+
+                    retweeted_status=line.get('retweeted_status')
+                    if retweeted_status==None:
+                        continue
+                    line_info=read_geo_weibo.SplitWeiboInfo(retweeted_status)
+                    if line_info==None:
+                        continue
+                    data,user=line_info
+                    weiboslist[data['weibo_id']]=data
+                    userslist[user['id']]=user
+
                 page+=1
             #if len(weiboslist)>0:
                 #weibo_l_w.insert(weiboslist.values())
             for data in weiboslist.values():
                 weibo_l_w.insert(data)
+            for data in userslist.values():
+                weibo_l_u.insert(data)
+
             if max_id>0:
                 weibo_l_u.update({'id':weibo_user['id']},{'$set':{'last_geo_check':start_check_time,'last_geo_check_id':max_id}})
                 print '%d read success (%d) from (%d)'%(weibo_user['id'],weibo_count,last_geo_check_id)

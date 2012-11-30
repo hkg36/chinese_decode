@@ -173,6 +173,16 @@ if __name__ == '__main__':
                     weiboslist[data['weibo_id']]=data
                     userslist[user['id']]=user
 
+                    retweeted_status=line.get('retweeted_status')
+                    if retweeted_status==None:
+                        continue
+                    line_info=SplitWeiboInfo(retweeted_status)
+                    if line_info==None:
+                        continue
+                    data,user=line_info
+                    weiboslist[data['weibo_id']]=data
+                    userslist[user['id']]=user
+
                 if not_go_next_page:
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
