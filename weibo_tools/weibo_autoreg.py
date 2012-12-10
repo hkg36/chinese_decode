@@ -105,11 +105,12 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         client.user_id=dbrow[0]
     else:
         oauth=GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-        dbc=db.cursor()
-        dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
-        db.commit()
-        client.set_access_token(oauth['access_token'], oauth['expires_in'])
-        client.user_id=oauth['uid']
+        if oauth:
+            dbc=db.cursor()
+            dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
+            db.commit()
+            client.set_access_token(oauth['access_token'], oauth['expires_in'])
+            client.user_id=oauth['uid']
     dbc.close()
     db.close()
     return client
