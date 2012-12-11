@@ -4,6 +4,7 @@ import weibo_tools
 import time
 import tools
 import env_data
+import mongo_autoreconnect
 
 if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)

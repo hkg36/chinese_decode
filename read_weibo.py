@@ -80,7 +80,7 @@ def RecheckComment(client):
     #print timestr
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()
-    dbc.execute("select weibo_id,last_comment_id,checktime,CreatedTime from weibo_commentlast order by checktime desc limit 500")
+    dbc.execute("select weibo_id,last_comment_id,checktime,CreatedTime from weibo_commentlast where checktime=0 limit 500")
 
     all_line=dbc.fetchall()
     for resrow in all_line:
@@ -89,10 +89,9 @@ def RecheckComment(client):
         createtime=time.mktime(time.strptime(resrow[3],"%Y-%m-%d %X"))
         if now-createtime>60*60*24*10:
             continue
-        if now-res_time>60*60:
+        if now-res_time>60*60*24*3:
             weibo_id=resrow[0]
             last_comment_id=resrow[1]
-
             try:
                 CheckComment(client,dbc,weibo_id,last_comment_id)
             except Exception,e:
@@ -131,7 +130,12 @@ if __name__ == '__main__':
     db.close()
 
     while True:
-        client = weibo_tools.DefaultWeiboClient()
+        APP_KEY = '2824743419'
+        APP_SECRET = '9c152c876ec980df305d54196539773f'
+        CALLBACK_URL = 'http://1.livep.sinaapp.com/api/weibo_manager_impl/sina_weibo/callback.php'
+        user_name = '496642325@qq.com'
+        user_psw = 'xianchangjia'
+        client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
         try:
             ReadUserWeibo(client)
             RecheckComment(client)

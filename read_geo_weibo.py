@@ -9,6 +9,7 @@ import pymongo
 import re
 import tools
 import env_data
+import mongo_autoreconnect
 
 try:
     import ujson as json

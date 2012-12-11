@@ -13,6 +13,8 @@ except Exception,e:
 
 class WordCell:
     freq=0
+    type=None
+    weight=0
 
 class DbTree:
     def __init__(self):
@@ -23,6 +25,14 @@ class DbTree:
                                   bsddb3.db.DB_RECOVER)
         self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
+
+        f=codecs.open('data/firstname_list.txt','r','utf8')
+        fnlist=set()
+        for line in f:
+            fnlist.add(line.strip())
+        f.close()
+        self.firstname=fnlist
+
     def findword(self,word):
         word_find=word.encode('utf8')
         cursor=self.db.cursor()
@@ -45,8 +55,6 @@ class DbTree:
 class WordTree:
     word_all=[]
     word_loaded={}
-    word_type={}
-    word_weight={}
     def __init__(self):
         home_dir='data/dictdb'
         try:
@@ -91,10 +99,10 @@ class WordTree:
         for one in self.word_loaded:
             wc=self.word_loaded[one]
             info={'freq':wc.freq}
-            if one in self.word_type:
-                info['type']=self.word_type[one]
-            if one in self.word_weight:
-                info['weight']=self.word_weight[one]
+            if wc.type:
+                info['type']=wc.type
+            if wc.weight:
+                info['weight']=wc.weight
             self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
 
         self.dbenv.txn_checkpoint()
@@ -117,8 +125,8 @@ class WordTree:
 
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
-            self.word_type[word]=word_type
-            self.word_weight[word]=1/math.log(freq,2)
+            addedCell.type=word_type
+            addedCell.weight=1/math.log(freq,2)
     def LoadTextFreqBase(self,all_line):
         line_reader=re.compile("^(?P<word>[^\s]*)\s+(?P<freq>\d*)\s+(?P<type>[^\s]*)",re.IGNORECASE)
         for line in all_line:
@@ -126,10 +134,8 @@ class WordTree:
             word=re_res.group("word")
             freq=string.atoi(re_res.group('freq'))
             type=re_res.group('type')
-            addedCell=self.AddWordToTree(word)
-            #addedCell.freq=freq
-            self.word_type[word]=type
-            #self.word_weight[word]=freq**(1.0/2)
+            wc=self.AddWordToTree(word)
+            wc.type=type
     def LoadWordFreqFile(self):
         fp=open("data/word_freq.txt",'r')
         word_freq_list=json.load(fp)
@@ -139,7 +145,7 @@ class WordTree:
             freq=word_freq_list[word]
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
-            self.word_weight[word]=freq**(1.0/2)
+            addedCell.weight=freq**(1.0/2)
 
 class FoundWord:
     def __init__(self,str,pos):
@@ -259,6 +265,8 @@ class LineSpliter:
         self.CheckCantantPre()
         self.CheckTail()
 
+        self.CheckName()
+
         return self.found_word
 
     def split_small_word(self,word):
@@ -361,6 +369,21 @@ class LineSpliter:
                     del self.found_word[index+1]
                 else:
                     index+=1
+    def CheckName(self):
+        if len(self.found_word)<2:
+            return
+        index=0
+        while index<len(self.found_word):
+            word=self.found_word[index]
+            if len(word.word)==1:
+                if word.word in self.search_root.firstname:
+                    pass
+            elif len(word.word)==2:
+                if word.word in self.search_root.firstname:
+                    pass
+                elif word.word[0] in self.search_root.firstname:
+                    pass
+            index+=1
 def LoadDefaultWordDic():
     return DbTree()
 def BuildDefaultWordDic():
@@ -447,7 +470,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"回复@刘君鹏丶:[偷笑][偷笑]等你比我成熟点再叫我小屁孩.你可不见得比我成熟[做鬼脸]"
+    #full_text=u"恐怕就真的是典型的"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
