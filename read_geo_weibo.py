@@ -81,6 +81,7 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
+    weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
 
     start_work_time=time.time()

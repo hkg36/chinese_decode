@@ -15,6 +15,7 @@ class WordCell:
     freq=0
     type=None
     weight=0
+    wordgroup=None
 
 class DbTree:
     def __init__(self):
@@ -25,6 +26,7 @@ class DbTree:
                                   bsddb3.db.DB_RECOVER)
         self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
+        self.cursor=self.db.cursor()
 
         f=codecs.open('data/firstname_list.txt','r','utf8')
         fnlist=set()
@@ -35,9 +37,7 @@ class DbTree:
 
     def findword(self,word):
         word_find=word.encode('utf8')
-        cursor=self.db.cursor()
-        res = cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
-        cursor.close()
+        res = self.cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
 
         if res!=None:
             res=(res[0].decode('utf8'),pickle.loads(res[1]));
@@ -50,6 +50,7 @@ class DbTree:
         return None
     def __del__(self):
         if self.db:
+            self.cursor.close()
             self.db.close()
         self.dbenv.close()
 class WordTree:
@@ -103,6 +104,8 @@ class WordTree:
                 info['type']=wc.type
             if wc.weight:
                 info['weight']=wc.weight
+            if wc.wordgroup:
+                info['group']=wc.wordgroup
             self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
 
         self.dbenv.txn_checkpoint()
@@ -146,6 +149,18 @@ class WordTree:
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
             addedCell.weight=freq**(1.0/2)
+    def LoadHudongbaikeWords(self):
+        fp=codecs.open('data/hudongbaike_groupofword.txt','r','utf8')
+        word_group=json.load(fp)
+        fp.close()
+        fp=codecs.open('data/hudongbaike_allword.txt','r','utf8')
+        for line in fp:
+            line=line.strip()
+            wc=self.AddWordToTree(line)
+            word_attr=word_group.get(line)
+            if word_attr:
+                wc.wordgroup=word_attr.get('group')
+        fp.close()
 
 class FoundWord:
     def __init__(self,str,pos):
@@ -176,17 +191,6 @@ class SearchWork:
                 return True
             else:
                 return False
-        """
-        pos=bisect.bisect_left(self.searchroot.word_all,self.temp_word)
-        if pos>=len(self.searchroot.word_all):
-            return False
-        pos_word=self.searchroot.word_all[pos]
-        if pos_word==self.temp_word:
-            return FoundWord(self.temp_word,self.startpos) #search found
-        elif pos_word.startswith(self.temp_word):
-            return True #search continue
-        else:
-            return False #search die"""
 class LineSpliter:
     def __init__(self,search_root):
         self.number_set=set()
@@ -206,8 +210,7 @@ class LineSpliter:
                 self.found_word.append(found_word)
             self.no_cn=''
             self.no_cn_start_pos=-1
-
-    def ProcessLine(self,line):
+    def SplitLine(self,line):
         for index in xrange(len(line)):
             self.no_cn_fin=False
             char=line[index]
@@ -233,7 +236,7 @@ class LineSpliter:
                 elif res==True:
                     has_one_success=True
                     next_round_process_word.append(one_proc)
-                #else:
+                    #else:
                 #    self.ProcessCellDie(one_proc)
                 self.CheckNoCnFound()
 
@@ -255,6 +258,9 @@ class LineSpliter:
         self.no_cn_fin=True
         self.CheckNoCnFound()
         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
+
+    def ProcessLine(self,line):
+        self.SplitLine(line)
 
         self.CheckCantantPre()
         self.CheckTail()
@@ -388,14 +394,14 @@ def LoadDefaultWordDic():
     return DbTree()
 def BuildDefaultWordDic():
     word_dict_root=WordTree()
-    fp=codecs.open('dict/chinese_data.txt','r','utf8') ##网友整理
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)
-    """fp=open('word3.txt','r')## 来自国家语言委员会
+    """fp=codecs.open('dict/chinese_data.txt','r','utf8') ##网友整理
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)"""
+    fp=codecs.open('dict/word3.txt','r','utf8')## 来自国家语言委员会
+    all_line=fp.readlines()
+    fp.close()
+    word_dict_root.BuildFindTree(all_line)
     """fp=open('dict/SogouLabDic.dic','r') ##来自搜狗互联网数据库
     all_line=fp.readlines()
     fp.close()
@@ -406,6 +412,8 @@ def BuildDefaultWordDic():
     word_dict_root.LoadTextFreqBase(all_line)
 
     word_dict_root.LoadWordFreqFile()
+
+    word_dict_root.LoadHudongbaikeWords()
 
     word_dict_root.LoadFinish()
     print 'dict loaded'
@@ -484,4 +492,9 @@ if __name__ == '__main__':
         words=spliter.ProcessLine(tp)
         signwordpos.ProcessSentence(words)
         for word in words:
-            print u">>%s %s"%(word.word,word.word_type_list)
+            groupstr=None
+            if word.info:
+                groups=word.info.get('group')
+                if groups:
+                    groupstr=','.join(groups)
+            print u">>%s %s"%(word.word,word.word_type_list),groupstr

@@ -13,17 +13,19 @@ import logging
 import pycurl
 import random
 from cStringIO import StringIO
-
 API_RemoteIP=None
 InterfaceIP=None
 
 def UseRandomLocalAddress():
+    global InterfaceIP
     names,aliases,ips = socket.gethostbyname_ex(socket.gethostname())
-    ips=[]
+    print ips
+    to_use_ip=set()
     for ip in ips :
         if not re.match('^(192.)|(10.)|(127.)',ip):
-            ips.append(ip)
-    InterfaceIP=ips
+            to_use_ip.add(ip)
+            print 'use ip:',ip
+    InterfaceIP=list(to_use_ip)
 
 class APIError(StandardError):
     '''
@@ -105,6 +107,8 @@ def _http_call(url, method, authorization, **kw):
     '''
     send an http request and expect to return a json object if no error.
     '''
+    global InterfaceIP
+    global API_RemoteIP
     params = None
     boundary = None
     if method==_HTTP_UPLOAD:
@@ -134,9 +138,9 @@ def _http_call(url, method, authorization, **kw):
     curl.setopt(pycurl.WRITEFUNCTION, b.write)
     curl.setopt(pycurl.FOLLOWLOCATION, 1)
     curl.setopt(pycurl.MAXREDIRS, 5)
-    if InterfaceIP:
+    if InterfaceIP is not None:
         if isinstance(InterfaceIP,list) and len(InterfaceIP)>0:
-            curl.setopt(pycurl.INTERFACE,InterfaceIP[random.randint[0,len(InterfaceIP)-1]])
+            curl.setopt(pycurl.INTERFACE,InterfaceIP[random.randint(0,len(InterfaceIP)-1)])
         elif (isinstance(InterfaceIP,str) or isinstance(InterfaceIP,unicode)) and len(InterfaceIP)>0:
             curl.setopt(pycurl.INTERFACE,InterfaceIP)
     curl.perform()

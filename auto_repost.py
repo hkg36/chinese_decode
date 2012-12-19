@@ -55,4 +55,4 @@ if __name__ == '__main__':
                     print res
                 except Exception,e:
                     print e
-            time.sleep(random.randint(5*60,10*60))
+            time.sleep(random.randint(3*60,6*60))
