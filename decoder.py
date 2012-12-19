@@ -258,10 +258,7 @@ class LineSpliter:
         self.no_cn_fin=True
         self.CheckNoCnFound()
         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
-
-    def ProcessLine(self,line):
-        self.SplitLine(line)
-
+    def AfterProcess(self):
         self.CheckCantantPre()
         self.CheckTail()
 
@@ -272,7 +269,9 @@ class LineSpliter:
         self.CheckTail()
 
         self.CheckName()
-
+    def ProcessLine(self,line):
+        self.SplitLine(line)
+        self.AfterProcess()
         return self.found_word
 
     def split_small_word(self,word):
@@ -478,7 +477,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"恐怕就真的是典型的"
+    #full_text=u"政协委员的发言和表决不受追究"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
