@@ -6,6 +6,7 @@ import bsddb3
 import os
 import pickle
 import math
+import sqlite3
 try:
     import ujson as json
 except Exception,e:
@@ -466,8 +467,72 @@ class SignWordPos:
                 if now_word.word_type_list==None:
                     if now_word.word in self.word_pos_max:
                         now_word.word_type_list=self.word_pos_max[now_word.word]
+class GroupTree:
+    class WordGroupInfo:
+        parent_group=None
+        groupname=None
+        parent_obj=[]
+        def __str__(self):
+            return self.groupname
+    def BuildTree(self):
+        sqlcon=sqlite3.connect('data/group.db')
+        sqlc=sqlcon.cursor()
+        sqlc.execute('select word,parent_group from groupword')
 
+        group_dic={}
+        for word,parent_group in sqlc:
+            if parent_group:
+                parent_group=parent_group.split(u',')
+                obj=self.WordGroupInfo()
+                obj.parent_group=parent_group
+                obj.groupname=word
+                obj.parent_obj=[]
+                group_dic[word]=obj
 
+        for word in group_dic:
+            obj=group_dic[word]
+            for pg in obj.parent_group:
+                po=group_dic.get(pg)
+                if po:
+                    obj.parent_obj.append(po)
+
+        self.group_dic=group_dic
+
+    def FindAllParent(self,groupname):
+        foundgroup=set()
+        ginfo=self.group_dic.get(groupname)
+        if ginfo is None:
+            return None
+        foundgroup.add(ginfo)
+        self._findparentgroup(ginfo,foundgroup)
+        return foundgroup
+    def _findparentgroup(self,ginfo,foundgroups,level=0):
+        if level>3:
+            return
+        tofind=[]
+        for obj in ginfo.parent_obj:
+            if obj not in foundgroups:
+                tofind.append(obj)
+                foundgroups.add(obj)
+        for tf in tofind:
+            self._findparentgroup(tf,foundgroups,level+1)
+    def StartCountGroup(self):
+        self.group_count={}
+    def ProcessOneLine(self,linewords):
+        for word in linewords:
+            if word.info:
+                groups=word.info.get('group')
+                if groups:
+                    for group in groups:
+                        foundgroup=self.FindAllParent(group)
+                        if foundgroup is not None:
+                            for fg in foundgroup:
+                                self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1
+    def EndCountGroup(self):
+        itemlist=self.group_count.items()
+        itemlist.sort(lambda a,b:-cmp(a[1],b[1]))
+        for i in xrange(min(10,len(itemlist))):
+            print itemlist[i][0],itemlist[i][1]
 if __name__ == '__main__':
     #BuildDefaultWordDic()
     word_dict_root=LoadDefaultWordDic()
@@ -485,11 +550,17 @@ if __name__ == '__main__':
         if len(tp)>0:
             text_list.append(tp)
 
+    grouptree=GroupTree()
+    grouptree.BuildTree()
+    grouptree.StartCountGroup()
     for tp in text_list:
         print tp
         spliter=LineSpliter(word_dict_root)
-        words=spliter.ProcessLine(tp)
+        spliter.SplitLine(tp)
+        spliter.AfterProcess()
+        words=spliter.found_word
         signwordpos.ProcessSentence(words)
+        grouptree.ProcessOneLine(words)
         for word in words:
             groupstr=None
             if word.info:
@@ -497,3 +568,4 @@ if __name__ == '__main__':
                 if groups:
                     groupstr=','.join(groups)
             print u">>%s %s"%(word.word,word.word_type_list),groupstr
+    grouptree.EndCountGroup()
