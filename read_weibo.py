@@ -6,7 +6,6 @@ import traceback
 from STTrans import STTrans
 import mongo_autoreconnect
 
-weibo_tools.InterfaceIP=['192.168.47.129']
 fetch_time=0
 def ReadUserWeibo(client):
     global fetch_time
@@ -75,37 +74,28 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
             dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,onec['uid'],reply_comment_id,text))
 
 def RecheckComment(client):
-    #befor_time=time.time()-60*60*2
-    #timestr=time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
-    #print timestr
+    befor_time=time.time()-60*60*24*3
+    timestr=time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
+
     db=sqlite3.connect("data/weibo_word_base.db")
     dbc=db.cursor()
-    dbc.execute("select weibo_id,last_comment_id,checktime,CreatedTime from weibo_commentlast where checktime=0 limit 500")
+    dbc.execute("select weibo_id,last_comment_id,checktime from weibo_commentlast where checktime=0 and CreatedTime<? limit 500",(timestr,))
 
     all_line=dbc.fetchall()
     for resrow in all_line:
-        now=time.time()
-        res_time=resrow[2]
-        createtime=time.mktime(time.strptime(resrow[3],"%Y-%m-%d %X"))
-        if now-createtime>60*60*24*10:
-            continue
-        if now-res_time>60*60*24*3:
-            weibo_id=resrow[0]
-            last_comment_id=resrow[1]
-            try:
-                CheckComment(client,dbc,weibo_id,last_comment_id)
-            except Exception,e:
-                print traceback.format_exc()
-                db.commit()
-                return
+        weibo_id=resrow[0]
+        last_comment_id=resrow[1]
+        try:
+            CheckComment(client,dbc,weibo_id,last_comment_id)
+        except Exception,e:
+            print traceback.format_exc()
+            db.commit()
+            return
     db.commit()
 
 if __name__ == '__main__':
+    weibo_tools.UseRandomLocalAddress()
     db=sqlite3.connect("data/weibo_word_base.db")
-    try:
-        db.execute("create table weibo_oauth(app_key varchar(32) not null,user_name varchar(32) not null,weibo_id varchar(32) not null,key varchar(30) not null,expires_time int not null,PRIMARY KEY(app_key,user_name))")
-    except Exception,e:
-        print e
     try:
         db.execute("create table weibo_commentlast(weibo_id int not null PRIMARY KEY,last_comment_id int not null,CreatedTime TimeStamp NOT NULL DEFAULT CURRENT_TIMESTAMP,checktime int default 0)")
     except Exception,e:
@@ -133,8 +123,8 @@ if __name__ == '__main__':
         APP_KEY = '2824743419'
         APP_SECRET = '9c152c876ec980df305d54196539773f'
         CALLBACK_URL = 'http://1.livep.sinaapp.com/api/weibo_manager_impl/sina_weibo/callback.php'
-        user_name = '496642325@qq.com'
-        user_psw = 'xianchangjia'
+        user_name = '990631337@qq.com'
+        user_psw = 'asdf1234'
         client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
         try:
             ReadUserWeibo(client)

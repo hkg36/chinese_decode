@@ -7,6 +7,7 @@ import os
 import pickle
 import math
 import sqlite3
+import weakref
 try:
     import ujson as json
 except Exception,e:
@@ -202,25 +203,28 @@ class LineSpliter:
         self.process_work=[]
         self.found_word=[]
         self.search_root=search_root
-
-    def CheckNoCnFound(self):
-        if self.no_cn_fin:
-            if len(self.no_cn)>0:
-                found_word=FoundWord(self.no_cn,self.no_cn_start_pos)
-                found_word.is_no_cn=True
-                self.found_word.append(found_word)
-            self.no_cn=''
-            self.no_cn_start_pos=-1
+    def NoCnFound(self):
+        if len(self.no_cn)>0:
+            found_word=FoundWord(self.no_cn,self.no_cn_start_pos)
+            found_word.is_no_cn=True
+            for char in found_word.word:
+                if char not in self.number_set:
+                    found_word.is_num=False
+                    break
+            else:
+                found_word.is_num=True
+            self.found_word.append(found_word)
+        self.no_cn=''
+        self.no_cn_start_pos=-1
     def SplitLine(self,line):
         for index in xrange(len(line)):
-            self.no_cn_fin=False
             char=line[index]
             if char in self.number_set or re.match("[a-zA-Z]",char):
                 if self.no_cn_start_pos==-1:
                     self.no_cn_start_pos=index
                 self.no_cn=self.no_cn+char
             else:
-                self.no_cn_fin=True
+                self.NoCnFound()
 
             if len(self.process_work)==0:
                 self.process_work.append(SearchWork(index,self.search_root))
@@ -239,7 +243,6 @@ class LineSpliter:
                     next_round_process_word.append(one_proc)
                     #else:
                 #    self.ProcessCellDie(one_proc)
-                self.CheckNoCnFound()
 
             if has_one_success==False:
                 sw=SearchWork(index,self.search_root)
@@ -256,8 +259,8 @@ class LineSpliter:
 
             self.process_work=next_round_process_word
 
-        self.no_cn_fin=True
-        self.CheckNoCnFound()
+        self.NoCnFound()
+
         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
     def AfterProcess(self):
         self.CheckCantantPre()
@@ -471,7 +474,7 @@ class GroupTree:
     class WordGroupInfo:
         parent_group=None
         groupname=None
-        parent_obj=[]
+        parent_obj=weakref.WeakSet()
         def __str__(self):
             return self.groupname
     def BuildTree(self):
@@ -499,7 +502,7 @@ class GroupTree:
         self.group_dic=group_dic
 
     def FindAllParent(self,groupname):
-        foundgroup=set()
+        foundgroup=weakref.WeakSet()
         ginfo=self.group_dic.get(groupname)
         if ginfo is None:
             return None
@@ -507,7 +510,7 @@ class GroupTree:
         self._findparentgroup(ginfo,foundgroup)
         return foundgroup
     def _findparentgroup(self,ginfo,foundgroups,level=0):
-        if level>3:
+        if level>2:
             return
         tofind=[]
         for obj in ginfo.parent_obj:
@@ -542,7 +545,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"政协委员的发言和表决不受追究"
+    #full_text=u"ddff发现了1437个人1964"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

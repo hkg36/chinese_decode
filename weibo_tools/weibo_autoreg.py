@@ -100,7 +100,7 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     dbc=db.cursor()
     dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()-3600))
     dbrow=dbc.fetchone()
-    if dbrow!=None:
+    if dbrow is not None:
         client.set_access_token(dbrow[1],dbrow[2])
         client.user_id=dbrow[0]
     else:
@@ -114,6 +114,22 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     dbc.close()
     db.close()
     return client
+def GetUserOauth(APP_KEY,APP_SECRET,uid_or_name):
+    db=sqlite3.connect("data/weibo_oauths.db")
+    dbc=db.cursor()
+    dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and (user_name=? or weibo_id=?) and expires_time>?",(APP_KEY,uid_or_name,uid_or_name,time.time()-3600))
+    client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET)
+    dbrow=dbc.fetchone()
+    if dbrow is not None:
+        client.set_access_token(dbrow[1],dbrow[2])
+        client.user_id=dbrow[0]
+    dbc.close()
+    dbc.close()
+def RemoveWeiboOauth(APP_KEY,user_name):
+    db=sqlite3.connect("data/weibo_oauths.db")
+    db.execute("delete from weibo_oauth where app_key=? and user_name=?",(APP_KEY,user_name))
+    db.close()
+
 def DefaultWeiboClient():
     APP_KEY = '2824743419'
     APP_SECRET = '9c152c876ec980df305d54196539773f'
