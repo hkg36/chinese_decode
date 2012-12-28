@@ -4,7 +4,7 @@ import sqlite3
 import codecs
 import random
 import time
-
+import json
 def loadAccounts():
     accounts={}
     f=codecs.open('weibo_accounts/beijing_account.csv','r','utf-8')
@@ -52,7 +52,7 @@ if __name__ == '__main__':
                     account=accounts[random.randint(0,len(accounts)-1)]
                     weiboclient=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,account[0],account[1])
                     res=weiboclient.post.statuses__repost(id=line['id'],status=word,is_comment=0)
-                    print res
+                    print json.dumps(res,ensure_ascii=False)
                 except Exception,e:
                     print e
-            time.sleep(random.randint(3*60,6*60))
+            time.sleep(random.randint(1*60,2*60))
