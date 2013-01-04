@@ -16,6 +16,7 @@ from cStringIO import StringIO
 API_RemoteIP=None
 InterfaceIP=None
 
+token_error=set((21314,21315,21316,21317,21319,21327))
 def UseRandomLocalAddress():
     global InterfaceIP
     names,aliases,ips = socket.gethostbyname_ex(socket.gethostname())
