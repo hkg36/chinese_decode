@@ -170,6 +170,7 @@ class FoundWord:
         self.pos=pos
         self.word_type_list=None
         self.info=None
+        self.is_no_cn=False
     def __str__(self):
         return self.word
 class SearchWork:
