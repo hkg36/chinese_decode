@@ -196,9 +196,7 @@ class SearchWork:
                 return False
 class LineSpliter:
     def __init__(self,search_root):
-        self.number_set=set()
-        for char in u"0123456789%.一二三四五六七八九十百千万亿几某多单双":
-            self.number_set.add(char)
+        self.number_set=set(u"0123456789%.一二三四五六七八九十百千万亿几某多单双")
         self.no_cn=''
         self.no_cn_start_pos=-1
         self.process_work=[]
@@ -539,6 +537,7 @@ class GroupTree:
             print itemlist[i][0],itemlist[i][1]
 if __name__ == '__main__':
     #BuildDefaultWordDic()
+
     word_dict_root=LoadDefaultWordDic()
     signwordpos=SignWordPos()
     signwordpos.LoadData()

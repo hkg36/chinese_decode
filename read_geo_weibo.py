@@ -59,6 +59,7 @@ def SplitWeiboInfo(line):
     return (data,user)
 
 if __name__ == '__main__':
+    #ss=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(1348447055)))
     if not os.path.exists("GeoData"):
         os.mkdir("GeoData")
     db=sqlite3.connect("GeoData/GeoPointList.db")
