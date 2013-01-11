@@ -28,10 +28,10 @@ def FindWordCount(word_dict_root,word):
                 word_record[word.word]=1
     return word_record
 def RemoveWeiboRubbish(word):
-    word=re.sub(u"\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",word)
-    word=re.sub(u"\w{0,4}://[\w\d./]*","",word,0,re.I)
-    word=re.sub(u"转发微博","",word,0,re.I)
-    word=re.sub(u"\[[^\]]*\]","",word,0,re.I)
+    word=re.sub(u"(?i)\/*((@[^\s:]*)|(回复@[^\s:]*:))[:\s\/]*","",word)
+    word=re.sub(u"(?i)\w{0,4}://[\w\d./]*","",word)
+    word=re.sub(u"转发微博","",word)
+    word=re.sub(u"\[[^\]]*\]","",word)
     word=word.strip()
     return word
 def DoubleAve(l):
@@ -51,8 +51,8 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
             weight=word_info.get('weight',0)
             main_weight+=weight*word_record[key]
 
-    if main_weight<100:
-        return []
+    """if main_weight<100:
+        return []"""
     weibo_id_count={}
     for key in word_record:
         dbc.execute("select weibo_id,times from all_word where word=?",(key,))
@@ -108,7 +108,7 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
     for weibo_id,weight in asw_weights:
         dbc.execute('select word from all_weibo where weibo_id=?',(weibo_id,))
         for resrow in dbc:
-            print "req:",resrow[0]
+            weibo_reply_list.append(RemoveWeiboRubbish(resrow[0]))
     return weibo_reply_list
 
 if __name__ == '__main__':

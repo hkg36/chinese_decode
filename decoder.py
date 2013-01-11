@@ -7,7 +7,6 @@ import os
 import pickle
 import math
 import sqlite3
-import weakref
 try:
     import ujson as json
 except Exception,e:
@@ -473,7 +472,7 @@ class GroupTree:
     class WordGroupInfo:
         parent_group=None
         groupname=None
-        parent_obj=weakref.WeakSet()
+        parent_obj=set()
         def __str__(self):
             return self.groupname
     def BuildTree(self):
@@ -501,7 +500,7 @@ class GroupTree:
         self.group_dic=group_dic
 
     def FindAllParent(self,groupname):
-        foundgroup=weakref.WeakSet()
+        foundgroup=set()
         ginfo=self.group_dic.get(groupname)
         if ginfo is None:
             return None
