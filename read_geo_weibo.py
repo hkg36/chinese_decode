@@ -10,11 +10,8 @@ import re
 import tools
 import env_data
 import mongo_autoreconnect
-
-try:
-    import ujson as json
-except:
-    import json
+import codecs
+import json
 
 def SplitWeiboInfo(line):
     if not 'user' in line:
@@ -120,16 +117,17 @@ if __name__ == '__main__':
             continue
 
         client = weibo_tools.DefaultWeiboClient()
-        userslist={}
-        weiboslist={}
+
         for pos in pos_to_record:
             last_weibo_id=pos['last_weibo_id']
-
             readtime=time.time()
             total_number=0
             max_id=0
             has_req_error=False
             page=1
+
+            userslist={}
+            weiboslist={}
             while page <= 50:
                 try:
                     place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
@@ -190,9 +188,19 @@ if __name__ == '__main__':
                     break
             print 'id:%d linecount:%d'%(pos['id'],total_number)
 
-            for data in weiboslist.values():
+            weiboslist=weiboslist.values()
+            userslist=userslist.values()
+
+            try:
+                outf=codecs.open('/home/data_xchen/geo_weibo/%0.3f.txt'%time.time(),'w','utf-8')
+                json.dump(weiboslist,outf,ensure_ascii=False)
+                outf.close()
+            except Exception,e:
+                print e
+
+            for data in weiboslist:
                 con.weibolist.weibo.insert(data)
-            for data in userslist.values():
+            for data in userslist:
                 con.weibolist.user.insert(data)
 
             if has_req_error==False:

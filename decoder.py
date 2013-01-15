@@ -141,7 +141,7 @@ class WordTree:
             wc=self.AddWordToTree(word)
             wc.type=type
     def LoadWordFreqFile(self):
-        fp=open("data/word_freq.txt",'r')
+        fp=open("data/dictbase/word_freq.txt",'r')
         word_freq_list=json.load(fp)
         fp.close()
 
@@ -151,10 +151,10 @@ class WordTree:
             addedCell.freq=freq
             addedCell.weight=freq**(1.0/2)
     def LoadHudongbaikeWords(self):
-        fp=codecs.open('data/hudongbaike_groupofword.txt','r','utf8')
+        fp=codecs.open('data/dictbase/hudongbaike_groupofword.txt','r','utf8')
         word_group=json.load(fp)
         fp.close()
-        fp=codecs.open('data/hudongbaike_allword.txt','r','utf8')
+        fp=codecs.open('data/dictbase/hudongbaike_allword.txt','r','utf8')
         for line in fp:
             line=line.strip()
             wc=self.AddWordToTree(line)
@@ -422,13 +422,13 @@ def BuildDefaultWordDic():
 
 class SignWordPos:
     def LoadData(self):
-        fp=open('data/word_pos.txt','r')
+        fp=open('data/dictbase/word_pos.txt','r')
         self.word_pos=json.load(fp)
         fp.close()
-        fp=open('data/word_pos_max.txt','r')
+        fp=open('data/dictbase/word_pos_max.txt','r')
         self.word_pos_max=json.load(fp)
         fp.close()
-        fp=open('data/word_trans.txt','r')
+        fp=open('data/dictbase/word_trans.txt','r')
         self.word_tran=json.load(fp)
         fp.close()
 

@@ -87,9 +87,12 @@ if __name__ == '__main__':
                 page+=1
             #if len(weiboslist)>0:
                 #weibo_l_w.insert(weiboslist.values())
-            for data in weiboslist.values():
+            weiboslist=weiboslist.values()
+            userslist=userslist.values()
+
+            for data in weiboslist:
                 weibo_l_w.insert(data)
-            for data in userslist.values():
+            for data in userslist:
                 weibo_l_u.insert(data)
 
             if max_id>0:
