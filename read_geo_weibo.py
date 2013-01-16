@@ -86,7 +86,9 @@ if __name__ == '__main__':
     run_start_time=0
     while True:
         if time.time()-start_work_time>60*60:
+            print 'self kill'
             tools.RestartSelf()
+            
         run_start_time=time.time()
 
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -190,13 +192,6 @@ if __name__ == '__main__':
 
             weiboslist=weiboslist.values()
             userslist=userslist.values()
-
-            try:
-                outf=codecs.open('/home/data_xchen/geo_weibo/%0.3f.txt'%time.time(),'w','utf-8')
-                json.dump(weiboslist,outf,ensure_ascii=False)
-                outf.close()
-            except Exception,e:
-                print e
 
             for data in weiboslist:
                 con.weibolist.weibo.insert(data)
