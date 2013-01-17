@@ -29,7 +29,7 @@ class DbTree:
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
         self.cursor=self.db.cursor()
 
-        f=codecs.open('data/firstname_list.txt','r','utf8')
+        f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
         fnlist=set()
         for line in f:
             fnlist.add(line.strip())

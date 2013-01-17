@@ -88,7 +88,7 @@ if __name__ == '__main__':
         if time.time()-start_work_time>60*60:
             print 'self kill'
             tools.RestartSelf()
-            
+
         run_start_time=time.time()
 
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")

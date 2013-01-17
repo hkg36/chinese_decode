@@ -20,6 +20,6 @@ if __name__ == '__main__':
                 continue
             word_dic[word.word]=word_dic.get(word.word,0)+1
 
-    fp=codecs.open('data/word_freq.txt','w+','utf-8')
+    fp=codecs.open('data/dictbase/word_freq.txt','w+','utf-8')
     json.dump(word_dic,fp,ensure_ascii=False)
     fp.close()

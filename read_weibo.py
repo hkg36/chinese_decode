@@ -124,7 +124,7 @@ if __name__ == '__main__':
         APP_SECRET = '9c152c876ec980df305d54196539773f'
         CALLBACK_URL = 'http://1.livep.sinaapp.com/api/weibo_manager_impl/sina_weibo/callback.php'
         user_name = '990631337@qq.com'
-        user_psw = 'asdf1234'
+        user_psw = 'mnbvcxz'
         client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
         try:
             ReadUserWeibo(client)
