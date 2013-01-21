@@ -37,7 +37,8 @@ class APIError(StandardError):
         self.error = error
         self.request = request
         StandardError.__init__(self, error)
-
+    def isOauthFail(self):
+        return self.error in token_error
     def __str__(self):
         return 'APIError: %s: %s, request: %s' % (self.error_code, self.error, self.request)
 

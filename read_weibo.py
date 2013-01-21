@@ -6,6 +6,20 @@ import traceback
 from STTrans import STTrans
 import mongo_autoreconnect
 
+def RepairDb(client,db):
+    try:
+        res=client.friendships__friends__ids(uid=client.user_id)
+        ids=res.get('ids')
+        db.execute('create table if not exists follow_ids(user_id int not null PRIMARY KEY)')
+        db.execute('delete from follow_ids')
+        dbc=db.cursor()
+        for id in ids:
+            dbc.execute('replace into follow_ids(user_id) values(?)',(id,))
+        db.commit()
+        dbc.close()
+        db.execute('delete from weibo_text where uid not in(select user_id from follow_ids)')
+    except Exception,e:
+        print e
 fetch_time=0
 def ReadUserWeibo(client):
     global fetch_time
@@ -18,6 +32,7 @@ def ReadUserWeibo(client):
     if dbrow!=None:
         since_id=dbrow[0]
     if fetch_time%200==0:
+        RepairDb(client,db)
         since_id=0
 
     all_time_line_statuses=[]
