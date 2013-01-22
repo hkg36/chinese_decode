@@ -89,7 +89,7 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
             dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,onec['uid'],reply_comment_id,text))
 
 def RecheckComment(client):
-    befor_time=time.time()-60*60*24*3
+    befor_time=time.time()-60*60*24*5
     timestr=time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
 
     db=sqlite3.connect("data/weibo_word_base.db")
