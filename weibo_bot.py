@@ -40,7 +40,8 @@ def DoubleAve(l):
         all+=o*o
     return math.sqrt(all/len(l))
 
-def FindReplyForSentence(word_dict_root,dbsearch,word):
+def FindReplyForSentence(word_dict_root,word):
+    dbsearch=sqlite3.connect('data/dbforsearch.db')
     dbc=dbsearch.cursor()
     word_record=FindWordCount(word_dict_root,word)
 
@@ -102,13 +103,14 @@ def FindReplyForSentence(word_dict_root,dbsearch,word):
 
     asw_weights=[(key,asw_wights[key]) for key in asw_wights]
     asw_weights.sort(lambda a,b:cmp(abs(asw_ave_weight-a[1]),abs(asw_ave_weight-b[1])))
-    asw_weights=asw_weights[0:5]
+    asw_weights=asw_weights[0:20]
 
     weibo_reply_list=[]
     for weibo_id,weight in asw_weights:
-        dbc.execute('select word from all_weibo where weibo_id=?',(weibo_id,))
-        for resrow in dbc:
-            weibo_reply_list.append(RemoveWeiboRubbish(resrow[0]))
+        dbc.execute('select word,word_count from all_weibo where weibo_id=?',(weibo_id,))
+        for word,word_count in dbc:
+            if float(abs(word_count-len(word_record)))/len(word_record)<.8:
+                weibo_reply_list.append(RemoveWeiboRubbish(word))
     return weibo_reply_list
 
 if __name__ == '__main__':
@@ -167,7 +169,7 @@ if __name__ == '__main__':
             continue
         print '------------------------------------------------------------'
         print 'src:',weibo_word
-        weibo_reply_list=FindResponse.FindResponse(word_dict_root,weibo_word)
+        weibo_reply_list=FindReplyForSentence(word_dict_root,weibo_word)
 
         if len(weibo_reply_list)>0:
             if debug_mode==0:
