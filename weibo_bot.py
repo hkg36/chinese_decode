@@ -4,7 +4,7 @@ import sqlite3
 import time
 from decoder import *
 import random
-import json
+import FindResponse
 
 def FindWordCount(word_dict_root,word):
     """
@@ -117,26 +117,14 @@ if __name__ == '__main__':
 
     APP_KEY = '2117816058'
     APP_SECRET = '80f6fac494eed2f4e8a54acb85683aea'
-    CALLBACK_URL = 'http://ljnh.sinaapp.com/index.php/girl/sinacallback'
+    CALLBACK_URL = 'http://www.haomeiniu.com/controller/callback.php'
     """APP_KEY = '685427335'
     APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
     CALLBACK_URL = 'http://www.hkg36.tk/weibo/authorization'"""
     user_name = '878260705@qq.com'
     user_psw = 'xianchangjia'
 
-    sub_users=[('xjc11112@qq.com','xianchangjia'),#我是小猪猪0319
-        ('xcj11113@qq.com','xianchangjia'), #请叫我宝儿1
-        ('xcj11114@qq.com','xianchangjia')]#谁是现场2
-
     bot_id_set=set()
-
-    db=sqlite3.connect("data/weibo_word_base.db")
-    dbc=db.cursor()
-    dbc.execute("select weibo_id from weibo_oauth group by weibo_id")
-    for line in dbc:
-        bot_id_set.add(string.atoi(line[0]))
-    dbc.close()
-    db.close()
 
     client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
     dbbot=sqlite3.connect("data/weibo_bot.db")
@@ -146,8 +134,6 @@ if __name__ == '__main__':
         dbc.execute("create table last_proc_comment(user_name varchar(32) not null PRIMARY KEY,last_comment int not null)")
     except Exception,e:
         print e
-
-    searchdb=sqlite3.connect("data/dbforsearch.db")
 
     comment_since_id=0
     dbc=dbbot.cursor()
@@ -181,20 +167,19 @@ if __name__ == '__main__':
             continue
         print '------------------------------------------------------------'
         print 'src:',weibo_word
-        weibo_reply_list=FindReplyForSentence(word_dict_root,searchdb,weibo_word)
+        weibo_reply_list=FindResponse.FindResponse(word_dict_root,weibo_word)
 
         if len(weibo_reply_list)>0:
             if debug_mode==0:
                 weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
+                weibo_reply=RemoveWeiboRubbish(weibo_reply)
                 print 'asw:',weibo_reply
             else:
                 for wr in weibo_reply_list:
+                    wr=RemoveWeiboRubbish(wr)
                     print 'asw:',wr
             try:
                 if debug_mode==0:
-                    sub_user=sub_users[random.randint(0,len(sub_users)-1)]
-                    #sub_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,sub_user[0],sub_user[1])
                     wbres=client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
-                pass
             except Exception,e:
                 print e

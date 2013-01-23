@@ -70,23 +70,30 @@ def ReadUserWeibo(client):
     db.commit()
     db.close()
 
+    print 'read new weibo :%d'%len(all_time_line_statuses)
+
     fetch_time+=1
 def CheckComment(client,dbc,weibo_id,last_comment_id=0):
     now=time.time()
-    weibores=client.comments__show(id=weibo_id,since_id=last_comment_id,count=200,trim_user=1)
-    if weibores.has_key('comments'):
-        comments=weibores['comments']
-        if len(comments)>0:
-            last_one_comment=comments[0]
-            dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id,checktime) values(?,?,?)",(weibo_id,last_one_comment['id'],now))
-        else:
+    count=0
+    for page in xrange(1,100):
+        weibores=client.comments__show(id=weibo_id,since_id=last_comment_id,count=200,trim_user=1,page=page)
+        comments=weibores.get('comments')
+        if comments is None or len(comments)==0:
             dbc.execute("update weibo_commentlast set checktime=? where weibo_id=?",(now,weibo_id))
+            print "%d comments for weibo %d"%(count,weibo_id)
+            return
+
+        last_one_comment=comments[0]
+        dbc.execute("replace into weibo_commentlast(weibo_id,last_comment_id,checktime) values(?,?,?)",(weibo_id,last_one_comment['id'],now))
+
         for onec in comments:
             reply_comment_id=0
             if 'reply_comment' in onec:
                 reply_comment_id=onec['reply_comment']['id']
             text=STTrans.getInstanse().TransT2S(onec['text'])
             dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,onec['uid'],reply_comment_id,text))
+        count+=len(comments)
 
 def RecheckComment(client):
     befor_time=time.time()-60*60*24*5

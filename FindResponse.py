@@ -13,7 +13,7 @@ import math
 import Tkinter
 
 #用词语权重法收集接近的句子
-def Step1(word_record):
+def Step1(word_dict_root,word_record):
     db=sqlite3.connect("data/dbforsearch.db")
     dbc=db.cursor()
 
@@ -56,13 +56,10 @@ def Step1(word_record):
     dbc.close()
     db.close()
     return word2_list
-if __name__ == '__main__':
-    word_dict_root=decoder.LoadDefaultWordDic()
-
-    word=u"今天运动会一跑起来完全没有形象可言了,虽然本来就没有什么形象[泪]反正是最后一次噢耶"
+def FindResponse(word_dict_root,word):
     word=weibo_bot.RemoveWeiboRubbish(word)
     word_record=weibo_bot.FindWordCount(word_dict_root,word)
-    word2_list=Step1(word_record)
+    word2_list=Step1(word_dict_root,word_record)
 
     word_index=word2_list.keys()
     weibo_index=set()
@@ -112,7 +109,16 @@ if __name__ == '__main__':
 
     db=sqlite3.connect("data/dbforsearch.db")
     dbc=db.cursor()
-    for one in weibo_dis:
+    res_wordlist=[]
+    for one in weibo_dis[0:10]:
         dbc.execute("select word from all_weibo where weibo_id=?",(one[0],))
         word,=dbc.next()
-        print word
+        res_wordlist.append(word)
+    return res_wordlist
+if __name__ == '__main__':
+    word_dict_root=decoder.LoadDefaultWordDic()
+
+    word=u"今天运动会一跑起来完全没有形象可言了,虽然本来就没有什么形象[泪]反正是最后一次噢耶"
+    res=FindResponse(word_dict_root,word)
+    for i in res:
+        print i
