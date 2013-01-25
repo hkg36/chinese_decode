@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     dbc=db.cursor()
     dbtc=dbtext.cursor()
-    dbc.execute("select weibo_id,word from weibo_text union select weibo_id,word from weibo_comment where weibo_id in (select distinct(reply_id) from weibo_comment)")
+    dbc.execute("select weibo_id,word from weibo_text union select weibo_id,word from weibo_comment")
     for weibo_id,weibo_word in dbc:
         word_recorded=ProcessOneWord(word_dict_root,weibo_id,weibo_word)
         for word in word_recorded:

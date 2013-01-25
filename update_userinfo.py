@@ -5,6 +5,7 @@ import time
 import tools
 import env_data
 import mongo_autoreconnect
+import json
 
 if __name__ == '__main__':
     weibo_tools.UseRandomLocalAddress()
@@ -18,7 +19,7 @@ if __name__ == '__main__':
         if time.time()-start_work_time>60*60:
             tools.RestartSelf()
         cur=weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
-            ,{"is_full_info":{'$ne':-1}}]},{'id':1}).limit(50)
+            ,{"is_full_info":{'$ne':-1}}]},{'id':1,'_id':0}).limit(50)
         client = weibo_tools.DefaultWeiboClient()
         users=[]
         for data in cur:
@@ -32,19 +33,22 @@ if __name__ == '__main__':
             try:
                 newdata=client.users__show(uid=data['id'])
                 print data['id']
-                status=newdata.pop('status')
+                if newdata.has_key('status'):
+                    status=newdata.pop('status')
                 tags=client.tags(uid=data['id'],count=200)
                 newdata['tags']=tags
                 newdata["is_full_info"]=FullInfoVersion
+                newdata['full_info_time']=time.time()
                 friend_res=client.friendships__friends__ids(uid=data['id'],count=5000)
                 if 'ids' in friend_res:
                     ids=friend_res['ids']
                     newdata['friend_list']=ids
-                weibo_l_u.update({'_id':data['_id']},{'$set':newdata})
+                weibo_l_u.update({'id':data['id']},{'$set':newdata})
             except weibo_tools.WeiboRequestFail,e:
                 if e.httpcode==400:
                     data['is_full_info']=-1
-                    weibo_l_u.update({'_id':data['_id']},{'$set':{'is_full_info':-1}})
+                    weibo_l_u.update({'id':data['id']},{'$set':{'is_full_info':-1}})
                 print e,data['id']
             except Exception,e:
+                print e
                 time.sleep(1)
