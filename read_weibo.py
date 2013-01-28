@@ -76,9 +76,11 @@ def ReadUserWeibo(client):
 def CheckComment(client,dbc,weibo_id,last_comment_id=0):
     now=time.time()
     count=0
+    total_number=0
     for page in xrange(1,100):
         weibores=client.comments__show(id=weibo_id,since_id=last_comment_id,count=200,trim_user=1,page=page)
         comments=weibores.get('comments')
+        total_number=weibores.get('total_number',0)
         if comments is None or len(comments)==0:
             dbc.execute("update weibo_commentlast set checktime=? where weibo_id=?",(now,weibo_id))
             print "%d comments for weibo %d"%(count,weibo_id)
@@ -94,6 +96,11 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
             text=STTrans.getInstanse().TransT2S(onec['text'])
             dbc.execute("replace into weibo_comment(weibo_id,comment_weibo_id,uid,reply_id,word) values(?,?,?,?,?)",(onec['id'],weibo_id,onec['uid'],reply_comment_id,text))
         count+=len(comments)
+
+        if count>=total_number:
+            dbc.execute("update weibo_commentlast set checktime=? where weibo_id=?",(now,weibo_id))
+            print "%d comments for weibo %d (page end)"%(count,weibo_id)
+            return
 
 def RecheckComment(client):
     befor_time=time.time()-60*60*24*5
@@ -155,4 +162,4 @@ if __name__ == '__main__':
             print e
         print 'go sleep'
         print time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
-        time.sleep(60*5)
+        time.sleep(60*50)

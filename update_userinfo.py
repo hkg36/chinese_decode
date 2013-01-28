@@ -48,6 +48,8 @@ if __name__ == '__main__':
                 if e.httpcode==400:
                     data['is_full_info']=-1
                     weibo_l_u.update({'id':data['id']},{'$set':{'is_full_info':-1}})
+                elif e.httpcode==403:
+                    time.sleep(50)
                 print e,data['id']
             except Exception,e:
                 print e

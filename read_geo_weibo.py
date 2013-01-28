@@ -206,3 +206,5 @@ if __name__ == '__main__':
                     pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
                         (readtime,total_number,readtime-pos['last_checktime'],pos['id']))
                 pos_db.commit()
+            else:
+                time.sleep(50)

@@ -169,7 +169,7 @@ if __name__ == '__main__':
             continue
         print '------------------------------------------------------------'
         print 'src:',weibo_word
-        weibo_reply_list=FindResponse.FindResponse(word_dict_root,weibo_word)
+        weibo_reply_list=FindReplyForSentence(word_dict_root,weibo_word)
 
         if len(weibo_reply_list)>0:
             if debug_mode==0:
