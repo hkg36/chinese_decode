@@ -24,8 +24,9 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word):
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
         for word in words:
-            if word.info!=None and 'type' in word.info:
-                word_type=word.info['type']
+            if word.info!=None:
+            #if word.info!=None and 'type' in word.info:
+                #word_type=word.info['type']
                 #if u'N' in word_type or u'V' in word_type:
                 word_record[word.word]=word_record.get(word.word,0)+1
 

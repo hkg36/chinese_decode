@@ -1,5 +1,6 @@
 #-*-coding:utf-8-*-
-import xml.etree.ElementTree as etree
+import xml.etree.cElementTree as etree
+import xml.dom.minidom
 import os
 import os.path
 import json
@@ -13,23 +14,12 @@ for parent, dirnames, filenames in os.walk(rootdir):
 s_list=[]
 for file in all_file:
     tree = etree.parse(file)
-    root=tree.getroot()
-    for l in root:
-        if l.tag==u'text':
-            for l2 in l:
-                if l2.tag==u'file':
-                    #文章
-                    for l3 in l2:
-                        if l3.tag==u'p':
-                            #断落
-                            for l4 in l3:
-                                if l4.tag==u's':
-                                    #句子
-                                    one_s=[]
-                                    for l5 in l4:
-                                        if l5.tag==u'w':
-                                            one_s.append((l5.text,l5.attrib[u'POS']))
-                                    s_list.append(one_s)
+
+    for s in tree.findall('./text/file/p/s'):
+        one_s=[]
+        for w in s.findall('w'):
+            one_s.append((w.text,w.attrib['POS']))
+        s_list.append(one_s)
 
 word_list={}
 for s in s_list:

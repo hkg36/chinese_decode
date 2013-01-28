@@ -131,6 +131,18 @@ class WordTree:
             addedCell.freq=freq
             addedCell.type=word_type
             addedCell.weight=1/math.log(freq,2)
+    def LoadWordType(self):
+        fp=open('data/dictbase/word_pos.txt','r')
+        word_pos=json.load(fp)
+        fp.close()
+        for word in word_pos:
+            wordtype=word_pos[word]
+            wt=[]
+            for type in wordtype:
+                wt.append((type,wordtype[type]))
+            wt.sort(lambda a,b:cmp(a[1],b[1]))
+            wc=self.AddWordToTree(word)
+            wc.type=[a[0] for a in wt]
     def LoadTextFreqBase(self,all_line):
         line_reader=re.compile("^(?P<word>[^\s]*)\s+(?P<freq>\d*)\s+(?P<type>[^\s]*)",re.IGNORECASE)
         for line in all_line:
@@ -141,9 +153,13 @@ class WordTree:
             wc=self.AddWordToTree(word)
             wc.type=type
     def LoadWordFreqFile(self):
-        fp=open("data/dictbase/word_freq.txt",'r')
-        word_freq_list=json.load(fp)
-        fp.close()
+        try:
+            fp=open("data/dictbase/word_freq.txt",'r')
+            word_freq_list=json.load(fp)
+            fp.close()
+        except Exception,e:
+            print e
+            return
 
         for word in word_freq_list:
             freq=word_freq_list[word]
@@ -403,14 +419,18 @@ def BuildDefaultWordDic():
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
+
+    word_dict_root.LoadWordType()
     """fp=open('dict/SogouLabDic.dic','r') ##来自搜狗互联网数据库
     all_line=fp.readlines()
     fp.close()
     word_dict_root.LoadSogouData(all_line)"""
+
+    """
     fp=codecs.open('dict/text_freq_base.txt','r','utf-8')
     all_line=fp.readlines()
     fp.close()
-    word_dict_root.LoadTextFreqBase(all_line)
+    word_dict_root.LoadTextFreqBase(all_line)"""
 
     word_dict_root.LoadWordFreqFile()
 
@@ -544,7 +564,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    full_text=u"在今年的市两会上持续发酵"
+    #full_text=u"在今年的市两会上持续发酵"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

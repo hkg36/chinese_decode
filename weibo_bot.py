@@ -82,11 +82,15 @@ def FindReplyForSentence(word_dict_root,word):
     maybe_replyids=[]
     if len(max_weibo_id)>0:
         for weibo_id in max_weibo_id:
-            dbc.execute("select weibo_id from all_weibo where reply_id=?",(weibo_id,))
-            for weibo_id2, in dbc:
-                maybe_replyids.append(weibo_id2)
+            dbc.execute("select weibo_id,word_count from all_weibo where reply_id=?",(weibo_id,))
+            for weibo_id2,word_count2 in dbc:
+                if word_count2 is None:
+                    continue
+                maybe_replyids.append((weibo_id2,abs(len(word_record)-word_count2)))
+    maybe_replyids.sort(lambda a,b:cmp(a[1],b[1]))
+    maybe_replyids=maybe_replyids[0:10]
 
-    dbc.execute('select word,weibo_id,times from all_word where weibo_id in (%s)'%(','.join(map(str,maybe_replyids))))
+    dbc.execute('select word,weibo_id,times from all_word where weibo_id in (%s)'%(','.join(map(str,[a[0] for a in maybe_replyids]))))
     asw_wights={}
     for word,weibo_id,times in dbc:
         word_info=word_dict_root.getwordinfo(word)
