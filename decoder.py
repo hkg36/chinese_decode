@@ -7,6 +7,7 @@ import os
 import pickle
 import math
 import sqlite3
+import gzip
 try:
     import ujson as json
 except Exception,e:
@@ -132,7 +133,7 @@ class WordTree:
             addedCell.type=word_type
             addedCell.weight=1/math.log(freq,2)
     def LoadWordType(self):
-        fp=open('data/dictbase/word_pos.txt','r')
+        fp=gzip.open('data/dictbase/word_pos.txt.gz')
         word_pos=json.load(fp)
         fp.close()
         for word in word_pos:
@@ -154,7 +155,7 @@ class WordTree:
             wc.type=type
     def LoadWordFreqFile(self):
         try:
-            fp=open("data/dictbase/word_freq.txt",'r')
+            fp=gzip.open("data/dictbase/word_freq.txt.gz")
             word_freq_list=json.load(fp)
             fp.close()
         except Exception,e:
@@ -442,13 +443,13 @@ def BuildDefaultWordDic():
 
 class SignWordPos:
     def LoadData(self):
-        fp=open('data/dictbase/word_pos.txt','r')
+        fp=gzip.open('data/dictbase/word_pos.txt.gz')
         self.word_pos=json.load(fp)
         fp.close()
-        fp=open('data/dictbase/word_pos_max.txt','r')
+        fp=gzip.open('data/dictbase/word_pos_max.txt.gz')
         self.word_pos_max=json.load(fp)
         fp.close()
-        fp=open('data/dictbase/word_trans.txt','r')
+        fp=gzip.open('data/dictbase/word_trans.txt.gz')
         self.word_tran=json.load(fp)
         fp.close()
 

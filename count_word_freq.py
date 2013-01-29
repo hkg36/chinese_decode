@@ -3,6 +3,7 @@ import sqlite3
 import codecs
 import json
 import decoder
+import gzip
 
 if __name__ == '__main__':
     dbtext=sqlite3.connect("../fetch_hudongbaike/data/sina_news.db")
@@ -20,6 +21,6 @@ if __name__ == '__main__':
                 continue
             word_dic[word.word]=word_dic.get(word.word,0)+1
 
-    fp=codecs.open('data/dictbase/word_freq.txt','w+','utf-8')
-    json.dump(word_dic,fp,ensure_ascii=False)
+    fp=gzip.open('data/dictbase/word_freq.txt.gz','w')
+    json.dump(word_dic,fp)
     fp.close()

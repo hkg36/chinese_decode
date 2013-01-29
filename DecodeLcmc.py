@@ -4,6 +4,7 @@ import xml.dom.minidom
 import os
 import os.path
 import json
+import gzip
 
 rootdir = "dict/character"
 all_file=[]
@@ -49,11 +50,13 @@ for word in word_list:
             max_poses.append(pos)
     word_list_max[word]=max_poses
 #词/每个词性出现的次数
-fp=open('data/dictbase/word_pos.txt','w+')
+#fp=open('data/dictbase/word_pos.txt','w+')
+fp=gzip.open('data/dictbase/word_pos.txt.gz','w')
 json.dump(word_list,fp)
 fp.close()
 
-fp=open('data/dictbase/word_pos_max.txt','w+')
+#fp=open('data/dictbase/word_pos_max.txt','w+')
+fp=gzip.open('data/dictbase/word_pos_max.txt.gz','w')
 json.dump(word_list_max,fp)
 fp.close()
 
@@ -87,7 +90,7 @@ for s in s_list:
 
 
 #词/前词的词性/前词词性导致本词词性=概率
-fp=open('data/dictbase/word_trans.txt','w+')
+fp=gzip.open('data/dictbase/word_trans.txt.gz','w')
 json.dump(word_trans,fp)
 fp.close()
 
