@@ -118,15 +118,12 @@ def FindReplyForSentence(word_dict_root,word):
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=1
+    debug_mode=0
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'
     APP_SECRET = '80f6fac494eed2f4e8a54acb85683aea'
     CALLBACK_URL = 'http://www.haomeiniu.com/controller/callback.php'
-    """APP_KEY = '685427335'
-    APP_SECRET = '1d735fa8f18fa94d87cd9196867edfb6'
-    CALLBACK_URL = 'http://www.hkg36.tk/weibo/authorization'"""
     user_name = '878260705@qq.com'
     user_psw = 'xianchangjia'
 
@@ -177,7 +174,7 @@ if __name__ == '__main__':
 
         if len(weibo_reply_list)>0:
             if debug_mode==0:
-                weibo_reply=weibo_reply_list[random.randint(0,len(weibo_reply_list)-1)]
+                weibo_reply=weibo_reply_list[0]
                 weibo_reply=RemoveWeiboRubbish(weibo_reply)
                 print 'asw:',weibo_reply
             else:

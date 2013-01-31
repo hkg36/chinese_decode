@@ -38,34 +38,28 @@ if __name__ == '__main__':
 
     db=sqlite3.connect("data/weibo_word_base.db")
 
-    os.remove("data/fulltext.db")
-    dbtext=sqlite3.connect("data/fulltext.db")
+    #dump db
+    if os.path.isfile("data/dbforsearch.db"):
+        os.remove("data/dbforsearch.db")
+
+    dbforsearch=sqlite3.connect("data/dbforsearch.db")
     try:
-        dbtext.execute("create table all_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
+        dbforsearch.execute("create table all_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
     except Exception,e:
         print e
 
     dbc=db.cursor()
-    dbtc=dbtext.cursor()
+    dbtc=dbforsearch.cursor()
     dbc.execute("select weibo_id,word from weibo_text union select weibo_id,word from weibo_comment")
     for weibo_id,weibo_word in dbc:
         word_recorded=ProcessOneWord(word_dict_root,weibo_id,weibo_word)
         for word in word_recorded:
             count=word_recorded[word]
             dbtc.execute('replace into all_word(word,weibo_id,times) values(?,?,?)',(word,weibo_id,count))
-    dbtext.commit()
+    dbforsearch.commit()
 
-    #dump db
-    try:
-        os.remove("data/dbforsearch.db")
-    except Exception,e:
-        print e
-    dbforsearch=sqlite3.connect("data/dbforsearch.db")
-    dbforsearch.execute("create table all_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
     dbforsearch.execute("create table all_weibo(weibo_id int not null PRIMARY KEY,uid int not null,word varchar(1024) not null,reply_id int,word_count int)")
     dbforsearch.execute("ATTACH DATABASE 'data/weibo_word_base.db' as weibo_base")
-    dbforsearch.execute("ATTACH DATABASE 'data/fulltext.db' as word_base")
-    dbforsearch.execute("insert into all_word(word,weibo_id,times) select word,weibo_id,times from word_base.all_word")
 
     sqlstr="""insert into all_weibo(weibo_id,uid,word,reply_id,word_count) select weibo_base.all_weibo.weibo_id,uid,word,reply_id,b.word_count from weibo_base.all_weibo
         left join (select weibo_id,count(*) as word_count from all_word group by weibo_id) b on b.weibo_id=weibo_base.all_weibo.weibo_id"""

@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
         before_time=time.time()-60*60*24
         user_to_check=[]
-        cur=weibo_l_u.find({'last_geo_check':{'$exists':False}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).limit(50)
+        cur=weibo_l_u.find({'last_geo_check':{'$exists':False}},{'id':1,'last_geo_check_id':1,'last_geo_check':1}).limit(500)
         for line in cur:
             user_to_check.append(line)
         cur.close()

@@ -16,14 +16,14 @@ def loadAccounts():
     f.close()
     return accounts
 def loadWords():
-    words=[]
+    words=set()
     f=codecs.open('weibo_accounts/weibo_res.txt','r','utf-8')
     for line in f:
         line=line.strip()
         if len(line)>0:
-            words.append(line)
+            words.add(line)
     f.close()
-    return words
+    return list(words)
 if __name__ == '__main__':
     accounts=loadAccounts()
     accounts=accounts.items()
