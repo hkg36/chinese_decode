@@ -102,6 +102,11 @@ class WeiboRequestFail(Exception):
     def __init__(self,httpcode,msg):
         self.httpcode=httpcode
         self.msg=msg
+        try:
+            self.error_data=json.decode(msg)
+        except Exception,e:
+            print e
+            self.error_data={}
     def __str__(self):
         return '%d %s'%(self.httpcode,self.msg)
 

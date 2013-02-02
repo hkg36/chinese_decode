@@ -46,8 +46,9 @@ if __name__ == '__main__':
                 weibo_l_u.update({'id':data['id']},{'$set':newdata})
             except weibo_tools.WeiboRequestFail,e:
                 if e.httpcode==400:
-                    data['is_full_info']=-1
-                    weibo_l_u.update({'id':data['id']},{'$set':{'is_full_info':-1}})
+                    if e.error_data.get('error_code',0)==20003:
+                        data['is_full_info']=-1
+                        weibo_l_u.update({'id':data['id']},{'$set':{'is_full_info':-1}})
                 elif e.httpcode==403:
                     time.sleep(50)
                 print e,data['id']

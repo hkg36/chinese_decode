@@ -96,9 +96,9 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
 def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
     db=sqlite3.connect("data/weibo_oauths.db")
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
-    db.execute('CREATE TABLE IF NOT EXISTS weibo_oauth(app_key varchar(32) not null,user_name varchar(32) not null,weibo_id varchar(32) not null,key varchar(30) not null,expires_time int not null,PRIMARY KEY(app_key,user_name))')
+    db.execute('CREATE TABLE IF NOT EXISTS weibo_oauth(app_key varchar(32) not null,user_name varchar(32) not null,user_psw varchar(64) not null,weibo_id varchar(32) not null,key varchar(30) not null,expires_time int not null,PRIMARY KEY(app_key,user_name))')
     dbc=db.cursor()
-    dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and expires_time>?",(APP_KEY,user_name,time.time()-3600))
+    dbc.execute("select weibo_id,key,expires_time from weibo_oauth where app_key=? and user_name=? and user_psw=? and expires_time>?",(APP_KEY,user_name,user_psw,time.time()-3600))
     dbrow=dbc.fetchone()
     if dbrow is not None:
         client.set_access_token(dbrow[1],dbrow[2])
@@ -107,7 +107,7 @@ def WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         oauth=GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
         if oauth:
             dbc=db.cursor()
-            dbc.execute("replace into weibo_oauth(app_key,user_name,weibo_id,key,expires_time) values(?,?,?,?,?)",(APP_KEY,user_name,oauth['uid'],oauth['access_token'],oauth['expires_in']))
+            dbc.execute("replace into weibo_oauth(app_key,user_name,user_psw,weibo_id,key,expires_time) values(?,?,?,?,?,?)",(APP_KEY,user_name,user_psw,oauth['uid'],oauth['access_token'],oauth['expires_in']))
             db.commit()
             client.set_access_token(oauth['access_token'], oauth['expires_in'])
             client.user_id=oauth['uid']
@@ -135,7 +135,7 @@ def DefaultWeiboClient():
     APP_SECRET = '9c152c876ec980df305d54196539773f'
     CALLBACK_URL = 'http://1.livep.sinaapp.com/api/weibo_manager_impl/sina_weibo/callback.php'
     user_name = '496642325@qq.com'
-    user_psw = 'xianchangjia'
+    user_psw = 'xianchangjia2'
     return WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
 if __name__ == '__main__':
     APP_KEY = '2824743419'

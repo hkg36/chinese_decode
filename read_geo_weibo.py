@@ -47,6 +47,7 @@ def SplitWeiboInfo(line):
         data['source']=source
         #con.weibolist.weibo.update({"weibo_id":data['weibo_id'],data,upsert=True)
     #weiboslist[data['weibo_id']]=data
+    data['rec_time']=time.time()
 
     user['is_full_info']=0
     user['time']=time.time()

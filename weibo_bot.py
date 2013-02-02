@@ -118,7 +118,7 @@ def FindReplyForSentence(word_dict_root,word):
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=0
+    debug_mode=1
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'

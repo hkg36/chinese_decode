@@ -168,10 +168,12 @@ class WordTree:
             addedCell.freq=freq
             addedCell.weight=freq**(1.0/2)
     def LoadHudongbaikeWords(self):
-        fp=codecs.open('data/dictbase/hudongbaike_groupofword.txt','r','utf8')
+        fp=gzip.open('data/dictbase/hudongbaike_groupofword.txt.gz','r')
         word_group=json.load(fp)
         fp.close()
-        fp=codecs.open('data/dictbase/hudongbaike_allword.txt','r','utf8')
+        fp=gzip.open('data/dictbase/hudongbaike_allword.txt.gz','r')
+        info = codecs.lookup('utf-8')
+        fp = codecs.StreamReaderWriter(fp, info.streamreader, info.streamwriter)
         for line in fp:
             line=line.strip()
             wc=self.AddWordToTree(line)
