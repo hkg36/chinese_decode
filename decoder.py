@@ -540,6 +540,7 @@ class GroupTree:
                 foundgroups.add(obj)
         for tf in tofind:
             self._findparentgroup(tf,foundgroups,level+1)
+class GroupFinder(GroupTree):
     def StartCountGroup(self):
         self.group_count={}
     def ProcessOneLine(self,linewords):
@@ -575,7 +576,7 @@ if __name__ == '__main__':
         if len(tp)>0:
             text_list.append(tp)
 
-    grouptree=GroupTree()
+    grouptree=GroupFinder()
     grouptree.BuildTree()
     grouptree.StartCountGroup()
     for tp in text_list:
