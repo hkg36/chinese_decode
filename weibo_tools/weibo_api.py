@@ -103,7 +103,7 @@ class WeiboRequestFail(Exception):
         self.httpcode=httpcode
         self.msg=msg
         try:
-            self.error_data=json.decode(msg)
+            self.error_data=json.loads(msg)
         except Exception,e:
             print e
             self.error_data={}

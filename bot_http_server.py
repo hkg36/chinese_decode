@@ -4,7 +4,7 @@ import string
 import json
 import weibo_bot
 import decoder
-import FindResponse
+#import FindResponse
 
 urls = (
     '/bot', 'Bot',
