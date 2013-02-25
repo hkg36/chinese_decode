@@ -18,17 +18,21 @@ if __name__ == '__main__':
     while True:
         if time.time()-start_work_time>60*60:
             tools.RestartSelf()
-        cur=weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
-            ,{"is_full_info":{'$ne':-1}}]},{'id':1,'_id':0}).limit(50)
-        client = weibo_tools.DefaultWeiboClient()
+
         users=[]
-        for data in cur:
-            users.append(data)
-        cur.close()
+        with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
+            ,{"is_full_info":{'$ne':-1}}]},{'id':1,'_id':0}).limit(50) as cur:
+            for data in cur:
+                users.append(data)
+        if len(users)==0:
+            with weibo_l_u.find({"is_full_info":{'$ne':-1}},{'id':1,'_id':0}).sort({'full_info_time':1}).limit(50) as cur:
+                for data in cur:
+                    users.append(data)
 
         if len(users)==0:
             time.sleep(60*60)
             continue
+        client = weibo_tools.DefaultWeiboClient()
         for data in users:
             try:
                 newdata=client.users__show(uid=data['id'])

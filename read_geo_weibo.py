@@ -82,6 +82,7 @@ if __name__ == '__main__':
 
     weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
+    con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
 
     start_work_time=time.time()
     run_start_time=0
@@ -196,6 +197,7 @@ if __name__ == '__main__':
 
             for data in weiboslist:
                 con.weibolist.weibo.insert(data)
+                con_bk.weibolist.weibo.insert(data)
             for data in userslist:
                 con.weibolist.user.insert(data)
 

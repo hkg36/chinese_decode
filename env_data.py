@@ -1,4 +1,5 @@
 mongo_connect_str='mongodb://localhost/'
+mongo_connect_str_backup='mongodb://218.241.207.46:27011'
 #mongo_connect_str='mongodb://xcj.server4'
 mongo_connect_write_str='mongodb://localhost'
 mongo_connect_read_str='mongodb://localhost/'
