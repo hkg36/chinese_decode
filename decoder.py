@@ -168,10 +168,10 @@ class WordTree:
             addedCell.freq=freq
             addedCell.weight=freq**(1.0/2)
     def LoadHudongbaikeWords(self):
-        fp=gzip.open('data/dictbase/hudongbaike_groupofword.txt.gz','r')
+        fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz','r')
         word_group=json.load(fp)
         fp.close()
-        fp=gzip.open('data/dictbase/hudongbaike_allword.txt.gz','r')
+        fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_allword.txt.gz','r')
         info = codecs.lookup('utf-8')
         fp = codecs.StreamReaderWriter(fp, info.streamreader, info.streamwriter)
         for line in fp:
@@ -414,26 +414,12 @@ def LoadDefaultWordDic():
     return DbTree()
 def BuildDefaultWordDic():
     word_dict_root=WordTree()
-    """fp=codecs.open('dict/chinese_data.txt','r','utf8') ##网友整理
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.BuildFindTree(all_line)"""
     fp=codecs.open('dict/word3.txt','r','utf8')## 来自国家语言委员会
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
 
     word_dict_root.LoadWordType()
-    """fp=open('dict/SogouLabDic.dic','r') ##来自搜狗互联网数据库
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.LoadSogouData(all_line)"""
-
-    """
-    fp=codecs.open('dict/text_freq_base.txt','r','utf-8')
-    all_line=fp.readlines()
-    fp.close()
-    word_dict_root.LoadTextFreqBase(all_line)"""
 
     word_dict_root.LoadWordFreqFile()
 
@@ -556,7 +542,7 @@ class GroupFinder(GroupTree):
     def EndCountGroup(self):
         itemlist=self.group_count.items()
         itemlist.sort(lambda a,b:-cmp(a[1],b[1]))
-        for i in xrange(min(10,len(itemlist))):
+        for i in xrange(len(itemlist)):
             print itemlist[i][0],itemlist[i][1]
 if __name__ == '__main__':
     #BuildDefaultWordDic()

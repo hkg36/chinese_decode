@@ -117,7 +117,7 @@ def FindReplyForSentence(word_dict_root,word):
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=1
+    debug_mode=0
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'
@@ -176,12 +176,11 @@ if __name__ == '__main__':
                 weibo_reply=weibo_reply_list[0]
                 weibo_reply=RemoveWeiboRubbish(weibo_reply)
                 print 'asw:',weibo_reply
+                try:
+                    wbres=client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
+                except Exception,e:
+                    print e
             else:
                 for wr in weibo_reply_list:
                     wr=RemoveWeiboRubbish(wr)
                     print 'asw:',wr
-            try:
-                if debug_mode==0:
-                    wbres=client.post.comments__reply(id=status['id'],cid=line['id'],comment=weibo_reply)
-            except Exception,e:
-                print e
