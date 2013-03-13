@@ -3,6 +3,9 @@ import weibo_tools
 import sqlite3
 import time
 if __name__ == '__main__':
+    """
+    导出公共微薄，提供分类计数的基础数据 下一步是 count_weibo_wordgroup.py
+    """
     client = weibo_tools.DefaultWeiboClient()
     dbcon=sqlite3.connect('data/public_time_line.sqlite')
     dbcon.execute('create table if not exists pubweibo(id unsigned long PRIMARY KEY,txt varchar(1024))')

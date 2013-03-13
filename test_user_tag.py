@@ -5,6 +5,9 @@ import re
 import weibo_bot
 import decoder
 if __name__ == '__main__':
+    """
+    测试用户的所有微薄，猜测用户的兴趣
+    """
     checkwords=[]
     with codecs.open('data/groupcount.txt','r','utf8') as groupf:
         for line in groupf:

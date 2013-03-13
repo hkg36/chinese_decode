@@ -6,6 +6,9 @@ import decoder
 import gzip
 
 if __name__ == '__main__':
+    """
+    使用新浪新闻来测试词频 上一步是 fetch_hudongbaike/fetch_sina_news.py
+    """
     dbtext=sqlite3.connect("../fetch_hudongbaike/data/sina_news.db")
 
     dc=dbtext.cursor()
