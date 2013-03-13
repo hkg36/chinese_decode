@@ -517,7 +517,7 @@ class GroupTree:
         self._findparentgroup(ginfo,foundgroup)
         return foundgroup
     def _findparentgroup(self,ginfo,foundgroups,level=0):
-        if level>2:
+        if level>4:
             return
         tofind=[]
         for obj in ginfo.parent_obj:
