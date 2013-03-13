@@ -199,7 +199,7 @@ if __name__ == '__main__':
                 con.weibolist.weibo.insert(data)
                 con_bk.weibolist.weibo.insert(data)
             for data in userslist:
-                con.weibolist.user.insert(data)
+                con.weibousers.user.insert(data)
 
             if has_req_error==False:
                 if total_number>0:

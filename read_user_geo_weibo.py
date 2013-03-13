@@ -8,9 +8,8 @@ import tools
 
 if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
-    weibo_list=con.weibolist
-    weibo_l_w=weibo_list.weibo
-    weibo_l_u=weibo_list.user
+    weibo_l_w=con.weibolist.weibo
+    weibo_l_u=con.weibousers.user
 
     start_work_time=time.time()
     while True:

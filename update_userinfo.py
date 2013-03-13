@@ -10,8 +10,7 @@ import json
 if __name__ == '__main__':
     weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
-    weibo_list=con.weibolist
-    weibo_l_u=weibo_list.user
+    weibo_l_u=con.weibousers.user
 
     start_work_time=time.time()
     FullInfoVersion=2
