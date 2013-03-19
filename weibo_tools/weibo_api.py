@@ -155,15 +155,6 @@ def _http_call(url, method, authorization, **kw):
         raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),b.getvalue())
     b.seek(0)
 
-    """req = urllib2.Request(http_url, data=http_body)
-    if authorization:
-        req.add_header('Authorization', 'OAuth2 %s' % authorization)
-    if API_RemoteIP:
-        req.add_header('API-RemoteIP',API_RemoteIP)
-    if boundary:
-        req.add_header('Content-Type', 'multipart/form-data; boundary=%s' % boundary)
-    resp = urllib2.urlopen(req,timeout=20)
-    body = resp.read()"""
     r = json.load(b)
     if 'error_code' in r:
         raise APIError(r['error_code'], r.get('error', ''),r.get('request', ''))

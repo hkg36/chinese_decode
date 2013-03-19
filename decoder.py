@@ -8,6 +8,7 @@ import pickle
 import math
 import sqlite3
 import gzip
+
 try:
     import ujson as json
 except Exception,e:
@@ -60,10 +61,8 @@ class WordTree:
     word_loaded={}
     def __init__(self):
         home_dir='data/dictdb'
-        try:
+        if not os.path.isdir(home_dir):
             os.mkdir(home_dir)
-        except Exception,e:
-            print e
         self.dbenv = bsddb3.db.DBEnv()
         self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
                              bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
