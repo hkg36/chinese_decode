@@ -9,6 +9,7 @@ import redis
 import time
 import env_data
 import mongo_autoreconnect
+import tools
 
 word_dict_root=None
 grouptree=None
@@ -19,6 +20,8 @@ def proc_init():
     grouptree=decoder.GroupFinder()
     grouptree.BuildTree()
     word_dict_root=decoder.LoadDefaultWordDic()
+def sleep_wait():
+    time.sleep(10)
 def lineproc(id,text):
     global word_dict_root
     global grouptree
@@ -36,7 +39,6 @@ def lineproc(id,text):
 
 if __name__ == '__main__':
     queue=redis.Redis(host='218.241.207.45',port=6379)
-    mongodb=pymongo.Connection(env_data.mongo_connect_str)
     """
     测试用户的所有微薄，猜测用户的兴趣 left is end
     """
@@ -54,9 +56,11 @@ if __name__ == '__main__':
         for one in res:
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
-    pool=multiprocessing.Pool(initializer=proc_init,processes=2)
+    pool=multiprocessing.Pool(initializer=proc_init)
 
-    while True:
+    mongodb=pymongo.Connection(env_data.mongo_connect_str)
+
+    for run_time_count in xrange(1000):
         try:
             weibo_uid=queue.lpop('test_user_tag')
         except KeyboardInterrupt,e:
@@ -69,7 +73,11 @@ if __name__ == '__main__':
         if weibo_uid is None:
             time.sleep(3)
             continue
-        weibo_uid=int(weibo_uid)
+        try:
+            weibo_uid=int(weibo_uid)
+        except Exception,e:
+            print e
+            continue
         print 'start work weibo_id %d'%weibo_uid
 
         client=weibo_tools.DefaultWeiboClient()
@@ -115,5 +123,10 @@ if __name__ == '__main__':
         resgroup=groupread[0:30]
         group_name=[one[0] for one in resgroup]
         group_count=[one[1] for one in resgroup]
+
         mongodb.weibousers.user.update({'id':weibo_uid},{'$set':{'tag_test_time':time.time()}})
         mongodb.user_tag.tag.update({'id':weibo_uid},{'$set':{'t':group_name,'c':group_count}},upsert=True)
+
+    pool.close()
+    pool.join()
+    tools.RestartSelf()

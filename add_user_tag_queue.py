@@ -13,10 +13,15 @@ if __name__ == '__main__':
 
     added_users=[]
     while True:
-        res=mongodb.weibousers.user.find({'tag_test_time':{"$exists":False}},{'_id':0,'id':1}).limit(200)
         new_user_set=set()
+        res=mongodb.weibousers.user.find({'tag_test_time':{"$exists":False}},{'_id':0,'id':1}).limit(200)
         for one in res:
             new_user_set.add(one['id'])
+        if len(new_user_set)==0:
+            res=mongodb.weibousers.user.find({},{'_id':0,'id':1}).sort([('tag_test_time',1)]).limit(200)
+            for one in res:
+                new_user_set.add(one['id'])
+
         for old in added_users:
             new_user_set-=old
         added_users.append(new_user_set)

@@ -24,9 +24,7 @@ class DbTree:
     def __init__(self):
         home_dir='data/dictdb'
         self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
-                                  bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
-                                  bsddb3.db.DB_RECOVER)
+        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |bsddb3.db.DB_INIT_CDB)
         self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
         self.cursor=self.db.cursor()
@@ -64,9 +62,7 @@ class WordTree:
         if not os.path.isdir(home_dir):
             os.mkdir(home_dir)
         self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |
-                             bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_THREAD |bsddb3.db.DB_INIT_TXN|
-                             bsddb3.db.DB_RECOVER)
+        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |bsddb3.db.DB_INIT_CDB)
     def __del__(self):
         if self.db:
             self.db.close()
@@ -108,9 +104,6 @@ class WordTree:
             if wc.wordgroup:
                 info['group']=wc.wordgroup
             self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
-
-        self.dbenv.txn_checkpoint()
-        self.dbenv.log_archive(bsddb3.db.DB_ARCH_REMOVE)
 
     def LoadSogouData(self,all_line):
         line_reader=re.compile("^([^\s]*)\s+(\d*)\s+(.*)",re.IGNORECASE)
@@ -347,7 +340,7 @@ class LineSpliter:
             for index in xrange(len(self.found_word)-1,0,-1):
                 word=self.found_word[index]
                 pre_word=self.found_word[index-1]
-                if word.word.find(pre_word.word)>=0:
+                if word.word.startswith(pre_word.word):
                     del self.found_word[index-1]
 
     def CheckAfterOverlap(self):
