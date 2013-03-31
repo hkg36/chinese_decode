@@ -8,11 +8,17 @@ import pickle
 import math
 import sqlite3
 import gzip
+import string
 
 try:
     import ujson as json
 except Exception,e:
     import json
+
+try:
+    import worddict
+except Exception,e:
+    worddict=None
 
 class WordCell:
     freq=0
@@ -29,6 +35,11 @@ class DbTree:
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
         self.cursor=self.db.cursor()
 
+        if worddict:
+            self.dbFileFinder=worddict.DbFileFinder('data/outdata','data/outindex')
+        else:
+            self.dbFileFinder=None
+
         f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
         fnlist=set()
         for line in f:
@@ -38,10 +49,13 @@ class DbTree:
 
     def findword(self,word):
         word_find=word.encode('utf8')
-        res = self.cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
-
-        if res!=None:
-            res=(res[0].decode('utf8'),pickle.loads(res[1]));
+        res=None
+        if self.dbFileFinder:
+            res=self.dbFileFinder.findString(word_find)
+        else:
+            res = self.cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
+            if res!=None:
+                res=res[0].decode('utf8');
         return res
     def getwordinfo(self,word):
         word_find=word.encode('utf8')
@@ -61,6 +75,10 @@ class WordTree:
         home_dir='data/dictdb'
         if not os.path.isdir(home_dir):
             os.mkdir(home_dir)
+        for f in os.listdir(home_dir):
+            f=os.path.join(home_dir,f)
+            if os.path.isfile(f):
+                os.remove(f)
         self.dbenv = bsddb3.db.DBEnv()
         self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |bsddb3.db.DB_INIT_CDB)
     def __del__(self):
@@ -87,11 +105,6 @@ class WordTree:
         self.word_all.sort()
 
         self.db = bsddb3.db.DB(self.dbenv)
-        try:
-            self.db.remove('maindb.db','main')
-        except Exception,e:
-            print e
-        self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
 
         for one in self.word_loaded:
@@ -105,25 +118,6 @@ class WordTree:
                 info['group']=wc.wordgroup
             self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
 
-    def LoadSogouData(self,all_line):
-        line_reader=re.compile("^([^\s]*)\s+(\d*)\s+(.*)",re.IGNORECASE)
-        for line in all_line:
-            line=line.decode('utf-8')
-            re_res=line_reader.match(line)
-            word=re_res.group(1)
-            freq=string.atoi(re_res.group(2))
-
-            word_type=[]
-            word_typelist=re_res.group(3).split(',')
-            for one in word_typelist:
-                one=one.strip()
-                if len(one)>0:
-                    word_type.append(one)
-
-            addedCell=self.AddWordToTree(word)
-            addedCell.freq=freq
-            addedCell.type=word_type
-            addedCell.weight=1/math.log(freq,2)
     def LoadWordType(self):
         fp=gzip.open('data/dictbase/word_pos.txt.gz')
         word_pos=json.load(fp)
@@ -136,15 +130,6 @@ class WordTree:
             wt.sort(lambda a,b:cmp(a[1],b[1]))
             wc=self.AddWordToTree(word)
             wc.type=[a[0] for a in wt]
-    def LoadTextFreqBase(self,all_line):
-        line_reader=re.compile("^(?P<word>[^\s]*)\s+(?P<freq>\d*)\s+(?P<type>[^\s]*)",re.IGNORECASE)
-        for line in all_line:
-            re_res=line_reader.match(line)
-            word=re_res.group("word")
-            freq=string.atoi(re_res.group('freq'))
-            type=re_res.group('type')
-            wc=self.AddWordToTree(word)
-            wc.type=type
     def LoadWordFreqFile(self):
         try:
             fp=gzip.open("data/dictbase/word_freq.txt.gz")
@@ -163,7 +148,10 @@ class WordTree:
         fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz','r')
         word_group=json.load(fp)
         fp.close()
-        fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_allword.txt.gz','r')
+        for word in word_group:
+            wc=self.AddWordToTree(word)
+            wc.wordgroup=word_group[word].get('group')
+        """fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_allword.txt.gz','r')
         info = codecs.lookup('utf-8')
         fp = codecs.StreamReaderWriter(fp, info.streamreader, info.streamwriter)
         for line in fp:
@@ -172,7 +160,7 @@ class WordTree:
             word_attr=word_group.get(line)
             if word_attr:
                 wc.wordgroup=word_attr.get('group')
-        fp.close()
+        fp.close()"""
 
 class FoundWord:
     def __init__(self,str,pos):
@@ -196,11 +184,10 @@ class SearchWork:
         if res==None:
             return False
         else:
-            if res[0]==self.temp_word:
+            if res==self.temp_word:
                 foundword=FoundWord(self.temp_word,self.startpos)
-                foundword.info=res[1]
                 return foundword
-            elif res[0].startswith(self.temp_word):
+            elif res.startswith(self.temp_word):
                 return True
             else:
                 return False
@@ -270,7 +257,15 @@ class LineSpliter:
 
         self.NoCnFound()
 
-        self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
+        def word_sort(a,b):
+            res=cmp(a.pos,b.pos)
+            if res==0:
+                return cmp(len(a.word),len(b.word))
+            return res
+        self.found_word.sort(word_sort)
+
+        for one in self.found_word:
+            one.info=self.search_root.getwordinfo(one.word)
     def AfterProcess(self):
         self.CheckCantantPre()
         self.CheckTail()
@@ -410,15 +405,13 @@ def BuildDefaultWordDic():
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
-
     word_dict_root.LoadWordType()
-
     word_dict_root.LoadWordFreqFile()
-
     word_dict_root.LoadHudongbaikeWords()
-
-    word_dict_root.LoadFinish()
     print 'dict loaded'
+    word_dict_root.LoadFinish()
+    if worddict:
+        worddict.buildDict('data/dictdb','data/outdata','data/outindex')
     return word_dict_root
 
 class SignWordPos:
@@ -522,6 +515,7 @@ class GroupFinder(GroupTree):
     def StartCountGroup(self):
         self.group_count={}
     def ProcessOneLine(self,linewords):
+        all_groups=set()
         for word in linewords:
             if word.info:
                 groups=word.info.get('group')
@@ -529,8 +523,9 @@ class GroupFinder(GroupTree):
                     for group in groups:
                         foundgroup=self.FindAllParent(group)
                         if foundgroup is not None:
-                            for fg in foundgroup:
-                                self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1
+                            all_groups.update(foundgroup)
+        for fg in all_groups:
+            self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1
     def EndCountGroup(self):
         itemlist=self.group_count.items()
         itemlist.sort(lambda a,b:-cmp(a[1],b[1]))

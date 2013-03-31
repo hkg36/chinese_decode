@@ -10,6 +10,7 @@ import time
 import env_data
 import mongo_autoreconnect
 import tools
+import sys
 
 word_dict_root=None
 grouptree=None
@@ -38,7 +39,12 @@ def lineproc(id,text):
     return grouptree.group_count
 
 if __name__ == '__main__':
-    queue=redis.Redis(host='218.241.207.45',port=6379)
+    test_mod=False
+    if len(sys.argv)>=2:
+        test_mod=sys.argv[1]=='test'
+    if test_mod==False:
+        queue=redis.Redis(host='218.241.207.45',port=6379)
+        mongodb=pymongo.Connection(env_data.mongo_connect_str)
     """
     测试用户的所有微薄，猜测用户的兴趣 left is end
     """
@@ -58,11 +64,12 @@ if __name__ == '__main__':
 
     pool=multiprocessing.Pool(initializer=proc_init)
 
-    mongodb=pymongo.Connection(env_data.mongo_connect_str)
-
     for run_time_count in xrange(1000):
         try:
-            weibo_uid=queue.lpop('test_user_tag')
+            if test_mod==False:
+                weibo_uid=queue.lpop('test_user_tag')
+            else:
+                weibo_uid=1824785034
         except KeyboardInterrupt,e:
             if pool:
                 pool.terminate()
@@ -121,6 +128,10 @@ if __name__ == '__main__':
                 groupread.append((wc,count))
         groupread.sort(lambda x,y:-cmp(x[1],y[1]))
         resgroup=groupread[0:30]
+        if test_mod:
+            for line in resgroup:
+                print line[0],line[1]
+            break
         group_name=[one[0] for one in resgroup]
         group_count=[one[1] for one in resgroup]
 
