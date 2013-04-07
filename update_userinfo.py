@@ -16,7 +16,7 @@ if __name__ == '__main__':
     FullInfoVersion=2
     while True:
         if time.time()-start_work_time>60*60:
-            tools.RestartSelf()
+            exit(0)
 
         users=[]
         with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}

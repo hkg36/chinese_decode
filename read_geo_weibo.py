@@ -89,7 +89,7 @@ if __name__ == '__main__':
     while True:
         if time.time()-start_work_time>60*60:
             print 'self kill'
-            tools.RestartSelf()
+            exit(0)
 
         run_start_time=time.time()
 
