@@ -26,11 +26,12 @@ class WordCell:
     weight=0
     wordgroup=None
 
+db_env_flag=bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL| bsddb3.db.DB_INIT_TXN | bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_RECOVER
 class DbTree:
     def __init__(self):
         home_dir='data/dictdb'
         self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |bsddb3.db.DB_INIT_CDB)
+        self.dbenv.open(home_dir, db_env_flag)
         self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
         self.cursor=self.db.cursor()
@@ -80,7 +81,7 @@ class WordTree:
             if os.path.isfile(f):
                 os.remove(f)
         self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL |bsddb3.db.DB_INIT_CDB)
+        self.dbenv.open(home_dir, db_env_flag)
     def __del__(self):
         if self.db:
             self.db.close()
@@ -411,7 +412,7 @@ def BuildDefaultWordDic():
     print 'dict loaded'
     word_dict_root.LoadFinish()
     if worddict:
-        worddict.buildDict('data/dictdb','data/outdata','data/outindex')
+        worddict.buildDict('data/dictdb','data/outdata','data/outindex',db_env_flag)
     return word_dict_root
 
 class SignWordPos:
