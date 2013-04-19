@@ -16,7 +16,7 @@ if __name__ == '__main__':
     addcount=0
     for index in xrange(len(checkwords)):
         addcount+=checkwords[index][1]
-        if float(addcount)/allcount>0.35:
+        if float(addcount)/allcount>0.5:
             print checkwords[index][0],index
             break
     checkwords=checkwords[index+1:]

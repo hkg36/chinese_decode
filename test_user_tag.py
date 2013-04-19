@@ -14,15 +14,18 @@ import sys
 
 word_dict_root=None
 grouptree=None
+signwordpos=None
 def proc_init():
     global word_dict_root
     global grouptree
+    global signwordpos
 
     grouptree=decoder.GroupFinder()
-    grouptree.BuildTree()
+    grouptree.LoadTree()
+    signwordpos=decoder.SignWordPos()
+    signwordpos.LoadData()
     word_dict_root=decoder.LoadDefaultWordDic()
-def sleep_wait():
-    time.sleep(10)
+
 def lineproc(id,text):
     global word_dict_root
     global grouptree
@@ -35,6 +38,7 @@ def lineproc(id,text):
     spliter.SplitLine(line)
     spliter.AfterProcess()
     words=spliter.found_word
+    signwordpos.ProcessSentence(words)
     grouptree.ProcessOneLine(words)
     return grouptree.group_count
 
@@ -69,7 +73,7 @@ if __name__ == '__main__':
             if test_mod==False:
                 weibo_uid=queue.lpop('test_user_tag')
             else:
-                weibo_uid=1824785034
+                weibo_uid=1785153462
         except KeyboardInterrupt,e:
             if pool:
                 pool.terminate()
@@ -112,12 +116,12 @@ if __name__ == '__main__':
                             proced_ids.add(id)
                             result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))
                         retw=line.get('retweeted_status')
-                        if retw:
+                        """if retw:
                             id=retw['id']
                             text=line['text']
                             if id not in proced_ids:
                                 proced_ids.add(id)
-                                result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))
+                                result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))"""
         for res1 in result_list:
             res1.wait()
 

@@ -9,6 +9,7 @@ import math
 import sqlite3
 import gzip
 import string
+import sys
 
 try:
     import ujson as json
@@ -28,6 +29,9 @@ class WordCell:
 
 db_env_flag=bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL| bsddb3.db.DB_INIT_TXN | bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_RECOVER
 class DbTree:
+    dbenv=None
+    db=None
+    cursor=None
     def __init__(self):
         home_dir='data/dictdb'
         self.dbenv = bsddb3.db.DBEnv()
@@ -47,12 +51,20 @@ class DbTree:
             fnlist.add(line.strip())
         f.close()
         self.firstname=fnlist
-
+    def __del__(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.db:
+            self.db.close()
+        if self.dbenv:
+            self.dbenv.close()
     def findword(self,word):
         word_find=word.encode('utf8')
         res=None
         if self.dbFileFinder:
             res=self.dbFileFinder.findString(word_find)
+            if res!=None:
+                res=res.decode('utf8');
         else:
             res = self.cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
             if res!=None:
@@ -64,14 +76,11 @@ class DbTree:
         if res!=None:
             return pickle.loads(res)
         return None
-    def __del__(self):
-        if self.db:
-            self.cursor.close()
-            self.db.close()
-        self.dbenv.close()
 class WordTree:
     word_all=[]
     word_loaded={}
+    dbenv=None
+    db=None
     def __init__(self):
         home_dir='data/dictdb'
         if not os.path.isdir(home_dir):
@@ -85,8 +94,8 @@ class WordTree:
     def __del__(self):
         if self.db:
             self.db.close()
-        self.dbenv.close()
-
+        if self.dbenv:
+            self.dbenv.close()
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()
@@ -411,8 +420,8 @@ def BuildDefaultWordDic():
     word_dict_root.LoadHudongbaikeWords()
     print 'dict loaded'
     word_dict_root.LoadFinish()
-    if worddict:
-        worddict.buildDict('data/dictdb','data/outdata','data/outindex',db_env_flag)
+    #if worddict:
+    #    worddict.buildDict('data/dictdb','data/outdata','data/outindex',db_env_flag)
     return word_dict_root
 
 class SignWordPos:
@@ -470,6 +479,38 @@ class GroupTree:
         parent_obj=set()
         def __str__(self):
             return self.groupname
+    def DumpGroupTree(self):
+        sqlcon=sqlite3.connect('data/group.db')
+        sqlc=sqlcon.cursor()
+        sqlc.execute('select word,parent_group from groupword')
+
+        f=codecs.open('data/grouplist.txt','w','utf8')
+        for word,parent_group in sqlc:
+            if parent_group!=None:
+                print >>f,'%s %s'%(word,parent_group)
+        f.close()
+    def LoadTree(self):
+        group_dic={}
+        f=codecs.open('data/grouplist.txt','r','utf8')
+        for line in f:
+            line=line.strip()
+            word,parent_group=line.split(' ')
+            parent_group=parent_group.split(u',')
+            obj=self.WordGroupInfo()
+            obj.parent_group=parent_group
+            obj.groupname=word
+            obj.parent_obj=[]
+            group_dic[word]=obj
+        f.close()
+
+        for word in group_dic:
+            obj=group_dic[word]
+            for pg in obj.parent_group:
+                po=group_dic.get(pg)
+                if po:
+                    obj.parent_obj.append(po)
+
+        self.group_dic=group_dic
     def BuildTree(self):
         sqlcon=sqlite3.connect('data/group.db')
         sqlc=sqlcon.cursor()
@@ -518,6 +559,15 @@ class GroupFinder(GroupTree):
     def ProcessOneLine(self,linewords):
         all_groups=set()
         for word in linewords:
+            passproc=False
+            if word.word_type_list and len(word.word_type_list)>0:
+                passproc=True
+                for type in word.word_type_list:
+                    if string.find(type,'n')!=-1:
+                        passproc=False
+                        break
+            if passproc:
+                continue
             if word.info:
                 groups=word.info.get('group')
                 if groups:
