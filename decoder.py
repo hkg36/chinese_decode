@@ -33,7 +33,7 @@ class DbTree:
     db=None
     cursor=None
     def __init__(self):
-        home_dir='data/dictdb'
+        home_dir='/app_data/chinese_decode/dictdb'
         self.dbenv = bsddb3.db.DBEnv()
         self.dbenv.open(home_dir, db_env_flag)
         self.db = bsddb3.db.DB(self.dbenv)
@@ -41,7 +41,7 @@ class DbTree:
         self.cursor=self.db.cursor()
 
         if worddict:
-            self.dbFileFinder=worddict.DbFileFinder('data/outdata','data/outindex')
+            self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/outindex')
         else:
             self.dbFileFinder=None
 
@@ -82,15 +82,7 @@ class WordTree:
     dbenv=None
     db=None
     def __init__(self):
-        home_dir='data/dictdb'
-        if not os.path.isdir(home_dir):
-            os.mkdir(home_dir)
-        for f in os.listdir(home_dir):
-            f=os.path.join(home_dir,f)
-            if os.path.isfile(f):
-                os.remove(f)
-        self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, db_env_flag)
+        pass
     def __del__(self):
         if self.db:
             self.db.close()
@@ -113,6 +105,16 @@ class WordTree:
         for one in self.word_loaded:
             self.word_all.append(one)
         self.word_all.sort()
+
+        home_dir='/app_data/chinese_decode/dictdb'
+        if not os.path.isdir(home_dir):
+            os.makedirs(home_dir)
+        for f in os.listdir(home_dir):
+            f=os.path.join(home_dir,f)
+            if os.path.isfile(f):
+                os.remove(f)
+        self.dbenv = bsddb3.db.DBEnv()
+        self.dbenv.open(home_dir, db_env_flag)
 
         self.db = bsddb3.db.DB(self.dbenv)
         self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
@@ -557,7 +559,7 @@ class GroupFinder(GroupTree):
     def StartCountGroup(self):
         self.group_count={}
     def ProcessOneLine(self,linewords):
-        all_groups=set()
+        #all_groups=set()
         for word in linewords:
             passproc=False
             if word.word_type_list and len(word.word_type_list)>0:
@@ -574,9 +576,11 @@ class GroupFinder(GroupTree):
                     for group in groups:
                         foundgroup=self.FindAllParent(group)
                         if foundgroup is not None:
-                            all_groups.update(foundgroup)
-        for fg in all_groups:
-            self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1
+                            for oneg in foundgroup:
+                                self.group_count[oneg.groupname]=self.group_count.get(oneg.groupname,0)+1
+                            #all_groups.update(foundgroup)
+        """for fg in all_groups:
+            self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1"""
     def EndCountGroup(self):
         itemlist=self.group_count.items()
         itemlist.sort(lambda a,b:-cmp(a[1],b[1]))

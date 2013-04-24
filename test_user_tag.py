@@ -91,10 +91,13 @@ if __name__ == '__main__':
             continue
         print 'start work weibo_id %d'%weibo_uid
 
+        wordgroup_allcount={}
+
         client=weibo_tools.DefaultWeiboClient()
         textlist={}
         proced_ids=set()
         result_list=[]
+        print "page read "
         for page in xrange(1,20):
             for i in xrange(10):
                 try:
@@ -103,7 +106,7 @@ if __name__ == '__main__':
                 except Exception,e:
                     res=None
                     print e
-            print 'page %d read'%page
+            print '%d,'%page,
             if res:
                 status=res.get('statuses')
                 if status:
@@ -116,12 +119,13 @@ if __name__ == '__main__':
                             proced_ids.add(id)
                             result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))
                         retw=line.get('retweeted_status')
-                        """if retw:
+                        if retw:
                             id=retw['id']
                             text=line['text']
                             if id not in proced_ids:
                                 proced_ids.add(id)
-                                result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))"""
+                                result_list.append(pool.apply_async(lineproc,(id,text),callback=lineres))
+        print ''
         for res1 in result_list:
             res1.wait()
 
@@ -132,10 +136,14 @@ if __name__ == '__main__':
                 groupread.append((wc,count))
         groupread.sort(lambda x,y:-cmp(x[1],y[1]))
         resgroup=groupread[0:30]
+
+        for line in resgroup:
+            print "%s=>%d"%(line[0],line[1]),
+        print ''
+
         if test_mod:
-            for line in resgroup:
-                print line[0],line[1]
             break
+
         group_name=[one[0] for one in resgroup]
         group_count=[one[1] for one in resgroup]
 
