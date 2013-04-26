@@ -40,7 +40,7 @@ def DoubleAve(l):
     return math.sqrt(all/len(l))
 
 def FindReplyForSentence(word_dict_root,word):
-    dbsearch=sqlite3.connect('data/dbforsearch.db')
+    dbsearch=sqlite3.connect("/app_data/chinese_decode/dbforsearch.db")
     dbc=dbsearch.cursor()
     word_record=FindWordCount(word_dict_root,word)
 
@@ -117,7 +117,7 @@ def FindReplyForSentence(word_dict_root,word):
     return weibo_reply_list
 
 if __name__ == '__main__':
-    debug_mode=0
+    debug_mode=1
     word_dict_root=LoadDefaultWordDic()
 
     APP_KEY = '2117816058'

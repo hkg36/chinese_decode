@@ -36,13 +36,14 @@ if __name__ == '__main__':
     #ignorewords=set((u'嘻嘻',u'哈哈',u'恩',u'嘿嘿',u'为什么',u'哦',u'噗',u'肿么办',u'怎么办'))
     word_dict_root=LoadDefaultWordDic()
 
-    db=sqlite3.connect("data/weibo_word_base.db")
+    db=sqlite3.connect("/app_data/chinese_decode/weibo_word_base.db")
 
+    dbforsearchfile="/app_data/chinese_decode/dbforsearch.db"
     #dump db
-    if os.path.isfile("data/dbforsearch.db"):
-        os.remove("data/dbforsearch.db")
+    if os.path.isfile(dbforsearchfile):
+        os.remove(dbforsearchfile)
 
-    dbforsearch=sqlite3.connect("data/dbforsearch.db")
+    dbforsearch=sqlite3.connect(dbforsearchfile)
     try:
         dbforsearch.execute("create table all_word(word varchar(32) not null,weibo_id int not null,times int,PRIMARY KEY(word,weibo_id))")
     except Exception,e:
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     dbforsearch.commit()
 
     dbforsearch.execute("create table all_weibo(weibo_id int not null PRIMARY KEY,uid int not null,word varchar(1024) not null,reply_id int,word_count int)")
-    dbforsearch.execute("ATTACH DATABASE 'data/weibo_word_base.db' as weibo_base")
+    dbforsearch.execute("ATTACH DATABASE '/app_data/chinese_decode/weibo_word_base.db' as weibo_base")
 
     sqlstr="""insert into all_weibo(weibo_id,uid,word,reply_id,word_count) select weibo_base.all_weibo.weibo_id,uid,word,reply_id,b.word_count from weibo_base.all_weibo
         left join (select weibo_id,count(*) as word_count from all_word group by weibo_id) b on b.weibo_id=weibo_base.all_weibo.weibo_id"""

@@ -24,7 +24,7 @@ fetch_time=0
 def ReadUserWeibo(client):
     global fetch_time
 
-    db=sqlite3.connect("data/weibo_word_base.db")
+    db=sqlite3.connect("/app_data/chinese_decode/weibo_word_base.db")
     dbc=db.cursor()
     dbc.execute("select last_weibo_id from weibo_lastweibo where user_id=?",(client.user_id,))
     dbrow=dbc.fetchone()

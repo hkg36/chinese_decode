@@ -51,13 +51,6 @@ class DbTree:
             fnlist.add(line.strip())
         f.close()
         self.firstname=fnlist
-    def __del__(self):
-        if self.cursor:
-            self.cursor.close()
-        if self.db:
-            self.db.close()
-        if self.dbenv:
-            self.dbenv.close()
     def findword(self,word):
         word_find=word.encode('utf8')
         res=None
@@ -83,11 +76,6 @@ class WordTree:
     db=None
     def __init__(self):
         pass
-    def __del__(self):
-        if self.db:
-            self.db.close()
-        if self.dbenv:
-            self.dbenv.close()
     def BuildFindTree(self,all_line):
         for line in all_line:
             line=line.strip()

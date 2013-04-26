@@ -1,50 +1,50 @@
-a          adjective
-ad        adjective as adverbial
-ag        adjective morpheme
-an        adjective with nominal function
-b          non-predicate adjective
-bg        non-predicate adjective morpheme
-c           conjunction
-cg         conjunction morpheme
-d           adverb
-dg         adverb morpheme
-e           interjection
-ew        sentential punctuation
-f            directional locality
-fg          locality morpheme
-g           morpheme
-h           prefix
-i            idiom
-j            abbreviation
-k           suffix
-l            fixed expressions
-m         numeral
-mg       numeric morpheme
-n           common noun
-ng         noun morpheme
-nr          personal name
-ns         place name
-nt          organization name
-nx         nominal character string
-nz         other proper noun
-o           onomatopoeia
-p           preposition
-pg         preposition morpheme
-q           classifier
-qg         classifier morpheme
-r            pronoun
-rg          pronoun morpheme
-s           space word
-t            time word
-tg          time word morpheme
-u           auxiliary
-v           verb
-vd         verb as adverbial
-vg         verb morpheme
-vn         verb with nominal function
-w          symbol and non-sentential punctuation
-x           unclassified items
-y           modal particle
-yg         modal particle morpheme
-z           descriptive
-zg         descriptive morpheme
+a          adjective        形容词
+ad        adjective as adverbial    形容词当副词用
+ag        adjective morpheme 形容词词素
+an        adjective with nominal function	形容词当动词
+b          non-predicate adjective	非前置形容词
+bg        non-predicate adjective morpheme	非前置形容词素
+c           conjunction		连词
+cg         conjunction morpheme		连词词素
+d           adverb		副词
+dg         adverb morpheme	副词词素
+e           interjection	感叹词
+ew        sentential punctuation	句子标点
+f            directional locality	地点方位
+fg          locality morpheme		地点语素
+g           morpheme		语素
+h           prefix		前缀
+i            idiom		成语
+j            abbreviation	缩写
+k           suffix		后缀
+l            fixed expressions		固定表达式
+m         numeral		数字
+mg       numeric morpheme	数字语素
+n           common noun		一般名词
+ng         noun morpheme	名词语素
+nr          personal name	人名
+ns         place name		地名
+nt          organization name	机构名称
+nx         nominal character string	名词性角色串
+nz         other proper noun	其他名词
+o           onomatopoeia	拟声词
+p           preposition		介词
+pg         preposition morpheme	介词语素
+q           classifier		量词
+qg         classifier morpheme	量词语素
+r            pronoun		代词
+rg          pronoun morpheme	代词语素
+s           space word		分割词
+t            time word		时间词
+tg          time word morpheme	时间词语素
+u           auxiliary		助词
+v           verb		动词
+vd         verb as adverbial	动词做副词
+vg         verb morpheme	动词语素
+vn         verb with nominal function	动词当名词
+w          symbol and non-sentential punctuation	标点符号
+x           unclassified items	未分类
+y           modal particle	形态小品词
+yg         modal particle morpheme 形态小品词语素
+z           descriptive		描述符
+zg         descriptive morpheme	描述符语素
