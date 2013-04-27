@@ -6,6 +6,7 @@ import traceback
 from STTrans import STTrans
 import mongo_autoreconnect
 
+word_base_db_file="/app_data/chinese_decode/weibo_word_base.db"
 def RepairDb(client,db):
     try:
         res=client.friendships__friends__ids(uid=client.user_id)
@@ -24,7 +25,7 @@ fetch_time=0
 def ReadUserWeibo(client):
     global fetch_time
 
-    db=sqlite3.connect("/app_data/chinese_decode/weibo_word_base.db")
+    db=sqlite3.connect(word_base_db_file)
     dbc=db.cursor()
     dbc.execute("select last_weibo_id from weibo_lastweibo where user_id=?",(client.user_id,))
     dbrow=dbc.fetchone()
@@ -106,7 +107,7 @@ def RecheckComment(client):
     befor_time=time.time()-60*60*24*5
     timestr=time.strftime("%Y-%m-%d %X",time.gmtime(time.time()))
 
-    db=sqlite3.connect("data/weibo_word_base.db")
+    db=sqlite3.connect(word_base_db_file)
     dbc=db.cursor()
     dbc.execute("select weibo_id,last_comment_id,checktime from weibo_commentlast where checktime=0 and CreatedTime<? limit 500",(timestr,))
 
@@ -124,7 +125,7 @@ def RecheckComment(client):
 
 if __name__ == '__main__':
     weibo_tools.UseRandomLocalAddress()
-    db=sqlite3.connect("data/weibo_word_base.db")
+    db=sqlite3.connect(word_base_db_file)
     try:
         db.execute("create table weibo_commentlast(weibo_id int not null PRIMARY KEY,last_comment_id int not null,CreatedTime TimeStamp NOT NULL DEFAULT CURRENT_TIMESTAMP,checktime int default 0)")
     except Exception,e:

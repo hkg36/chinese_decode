@@ -8,6 +8,7 @@ except :
 import string
 import weibo_bot
 import os
+import multiprocessing
 
 def ProcessOneWord(word_dict_root,weibo_id,weibo_word):
     weibo_word=weibo_bot.RemoveWeiboRubbish(weibo_word)
@@ -21,6 +22,7 @@ def ProcessOneWord(word_dict_root,weibo_id,weibo_word):
 
     word_record={}
     for tp in text_list:
+        print tp
         spliter=LineSpliter(word_dict_root)
         words=spliter.ProcessLine(tp)
         for word in words:

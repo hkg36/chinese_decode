@@ -33,17 +33,20 @@ class DbTree:
     db=None
     cursor=None
     def __init__(self):
-        home_dir='/app_data/chinese_decode/dictdb'
-        self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, db_env_flag)
-        self.db = bsddb3.db.DB(self.dbenv)
-        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
-        self.cursor=self.db.cursor()
+        self.dbenv = None
+        self.db = None
+        self.cursor=None
 
         if worddict:
-            self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/outindex')
+            self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/dbindex')
         else:
             self.dbFileFinder=None
+            home_dir='/app_data/chinese_decode/dictdb'
+            self.dbenv = bsddb3.db.DBEnv()
+            self.dbenv.open(home_dir, db_env_flag)
+            self.db = bsddb3.db.DB(self.dbenv)
+            self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
+            self.cursor=self.db.cursor()
 
         f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
         fnlist=set()
@@ -65,8 +68,15 @@ class DbTree:
         return res
     def getwordinfo(self,word):
         word_find=word.encode('utf8')
-        res=self.db.get(word_find)
-        if res!=None:
+        res=None
+        if self.dbFileFinder:
+            word_res=self.dbFileFinder.findString(word_find)
+            www=self.dbFileFinder.lastFoundString()
+            if word_res == word_find:
+                res=self.dbFileFinder.lastFoundValue()
+        else:
+            res=self.db.get(word_find)
+        if res!=None and len(res)>0:
             return pickle.loads(res)
         return None
 class WordTree:
@@ -584,7 +594,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"在今年的市两会上持续发酵"
+    #full_text=u"你怎么就那么美呢~~"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

@@ -66,7 +66,7 @@ if __name__ == '__main__':
         for one in res:
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
-    pool=multiprocessing.Pool(processes=2,initializer=proc_init)
+    pool=multiprocessing.Pool(processes=1,initializer=proc_init)
 
     for run_time_count in xrange(1000):
         try:
