@@ -17,7 +17,7 @@ except Exception,e:
     import json
 
 try:
-    import worddict
+    import worddict2 as worddict
 except Exception,e:
     worddict=None
 
@@ -171,6 +171,14 @@ class WordTree:
             if word_attr:
                 wc.wordgroup=word_attr.get('group')
         fp.close()"""
+    def LoadXinHuaZhiDian(self):
+        db=sqlite3.connect('../fetch_hudongbaike/data/xinhuazhidian.db')
+        dc=db.cursor()
+        dc.execute('select distinct(word) from words')
+        for word, in dc:
+            wc=self.AddWordToTree(word)
+        dc.close()
+        db.close()
 
 class FoundWord:
     def __init__(self,str,pos):
@@ -201,60 +209,67 @@ class SearchWork:
                 return True
             else:
                 return False
+class StaticVar:
+    pass
+StaticVar.number_set=set(u"0123456789%.一二三四五六七八九十百千万亿几某多单双")
 class LineSpliter:
     def __init__(self,search_root):
-        self.number_set=set(u"0123456789%.一二三四五六七八九十百千万亿几某多单双")
-        self.no_cn=''
-        self.no_cn_start_pos=-1
-        self.process_work=[]
-        self.found_word=[]
+        self.found_word=None
         self.search_root=search_root
-    def NoCnFound(self):
-        if len(self.no_cn)>0:
-            found_word=FoundWord(self.no_cn,self.no_cn_start_pos)
-            found_word.is_no_cn=True
-            for char in found_word.word:
-                if char not in self.number_set:
-                    found_word.is_num=False
-                    break
-            else:
-                found_word.is_num=True
-            self.found_word.append(found_word)
         self.no_cn=''
         self.no_cn_start_pos=-1
-    def SplitLine(self,line):
+
+    def BaseSplitLine(self,line):
+
+        process_work=[]
+        found_word=[]
+
+        def NoCnFound():
+            if len(self.no_cn)>0:
+                f_word=FoundWord(self.no_cn,self.no_cn_start_pos)
+                f_word.is_no_cn=True
+                for char in f_word.word:
+                    if char not in StaticVar.number_set:
+                        f_word.is_num=False
+                        break
+                else:
+                    f_word.is_num=True
+                found_word.append(f_word)
+            self.no_cn=''
+            self.no_cn_start_pos=-1
+
         for index in xrange(len(line)):
             char=line[index]
-            if char in self.number_set or re.match("[a-zA-Z]",char):
+            if char in StaticVar.number_set or re.match("[a-zA-Z]",char):
                 if self.no_cn_start_pos==-1:
                     self.no_cn_start_pos=index
                 self.no_cn=self.no_cn+char
             else:
-                self.NoCnFound()
+                NoCnFound()
 
-            if len(self.process_work)==0:
-                self.process_work.append(SearchWork(index,self.search_root))
+            if len(process_work)==0:
+                process_work.append(SearchWork(index,self.search_root))
             next_round_process_word=[]
             need_create_new_process=False
             has_one_success=False
-            for one_proc in self.process_work:
+            for one_proc in process_work:
                 res=one_proc.test_next_word(char) #检查下一个字
                 if isinstance(res,FoundWord):
                     has_one_success=True
-                    self.found_word.append(res)
+                    found_word.append(res)
                     next_round_process_word.append(one_proc)
                     need_create_new_process=True
                 elif res==True:
                     has_one_success=True
                     next_round_process_word.append(one_proc)
                     #else:
-                #    self.ProcessCellDie(one_proc)
+                #    ProcessCellDie(one_proc)
 
             if has_one_success==False:
                 sw=SearchWork(index,self.search_root)
                 res=sw.test_next_word(char)
                 if isinstance(res,FoundWord):
-                    self.found_word.append(res)
+                    found_word.append(res)
                     next_round_process_word.append(sw)
                 elif res==True:
                     next_round_process_word.append(sw)
@@ -263,19 +278,22 @@ class LineSpliter:
             if need_create_new_process:
                 next_round_process_word.append(SearchWork(index+1,self.search_root))
 
-            self.process_work=next_round_process_word
+            process_work=next_round_process_word
 
-        self.NoCnFound()
+        NoCnFound()
 
         def word_sort(a,b):
             res=cmp(a.pos,b.pos)
             if res==0:
                 return cmp(len(a.word),len(b.word))
             return res
-        self.found_word.sort(word_sort)
+        found_word.sort(word_sort)
 
-        for one in self.found_word:
+        for one in found_word:
             one.info=self.search_root.getwordinfo(one.word)
+        return found_word
+    def SplitLine(self,line):
+        self.found_word=self.BaseSplitLine(line)
     def AfterProcess(self):
         self.CheckCantantPre()
         self.CheckTail()
@@ -291,27 +309,6 @@ class LineSpliter:
         self.SplitLine(line)
         self.AfterProcess()
         return self.found_word
-
-    def split_small_word(self,word):
-        proc_work=[]
-        found_word=[]
-        for index in xrange(len(word)):
-            char=word[index]
-            next_round_process_word=[]
-            if len(proc_work)==0:
-                proc_work.append(SearchWork(index,self.search_root))
-            for one_proc in proc_work:
-                res=one_proc.test_next_word(char) #检查下一个字
-                if isinstance(res,FoundWord):
-                    has_one_success=True
-                    found_word.append(res)
-                    next_round_process_word.append(one_proc)
-                    need_create_new_process=True
-                elif res==True:
-                    has_one_success=True
-                    next_round_process_word.append(one_proc)
-            proc_work=next_round_process_word
-        return found_word
 
     def printFoundList(self):
         for word in self.found_word:
@@ -362,7 +359,7 @@ class LineSpliter:
                         #字归后词 重新拆分前词
                         new_word=now_word.word
                         new_word=new_word[0:len(new_word)-i2]
-                        new_found=self.split_small_word(new_word)
+                        new_found=self.BaseSplitLine(new_word)
                         for found in new_found:
                             found.pos+=now_word.pos
                         del self.found_word[index-1]
@@ -370,7 +367,7 @@ class LineSpliter:
                         self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
                         break
                     new_word=aft_word.word[i2:]
-                    new_found=self.split_small_word(new_word)
+                    new_found=self.BaseSplitLine(new_word)
                     offset_index=aft_word.pos+i2
                     for found in new_found:
                         found.pos+=offset_index
@@ -418,6 +415,7 @@ def BuildDefaultWordDic():
     word_dict_root.LoadWordType()
     word_dict_root.LoadWordFreqFile()
     word_dict_root.LoadHudongbaikeWords()
+    word_dict_root.LoadXinHuaZhiDian()
     print 'dict loaded'
     word_dict_root.LoadFinish()
     #if worddict:
@@ -480,7 +478,7 @@ class GroupTree:
         def __str__(self):
             return self.groupname
     def DumpGroupTree(self):
-        sqlcon=sqlite3.connect('data/group.db')
+        sqlcon=sqlite3.connect('../fetch_hudongbaike/data/group.db')
         sqlc=sqlcon.cursor()
         sqlc.execute('select word,parent_group from groupword')
 
@@ -557,7 +555,7 @@ class GroupFinder(GroupTree):
     def StartCountGroup(self):
         self.group_count={}
     def ProcessOneLine(self,linewords):
-        #all_groups=set()
+        all_groups=set()
         for word in linewords:
             passproc=False
             if word.word_type_list and len(word.word_type_list)>0:
@@ -574,11 +572,11 @@ class GroupFinder(GroupTree):
                     for group in groups:
                         foundgroup=self.FindAllParent(group)
                         if foundgroup is not None:
-                            for oneg in foundgroup:
-                                self.group_count[oneg.groupname]=self.group_count.get(oneg.groupname,0)+1
-                            #all_groups.update(foundgroup)
-        """for fg in all_groups:
-            self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1"""
+                            #for oneg in foundgroup:
+                                #self.group_count[oneg.groupname]=self.group_count.get(oneg.groupname,0)+1
+                            all_groups.update(foundgroup)
+        for fg in all_groups:
+            self.group_count[fg.groupname]=self.group_count.get(fg.groupname,0)+1
     def EndCountGroup(self):
         itemlist=self.group_count.items()
         itemlist.sort(lambda a,b:-cmp(a[1],b[1]))
@@ -594,7 +592,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"你怎么就那么美呢~~"
+    #full_text=u"倪志福同志永垂不朽"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
@@ -603,7 +601,7 @@ if __name__ == '__main__':
             text_list.append(tp)
 
     grouptree=GroupFinder()
-    grouptree.BuildTree()
+    grouptree.LoadTree()
     grouptree.StartCountGroup()
     for tp in text_list:
         print tp

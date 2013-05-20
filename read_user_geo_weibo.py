@@ -7,6 +7,8 @@ import mongo_autoreconnect
 import tools
 
 if __name__ == '__main__':
+    con_bak=pymongo.Connection(env_data.mongo_connect_str_backup,read_preference=pymongo.ReadPreference.PRIMARY)
+
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_w=con.weibolist.weibo
     weibo_l_u=con.weibousers.user
@@ -91,6 +93,7 @@ if __name__ == '__main__':
 
             for data in weiboslist:
                 weibo_l_w.insert(data)
+                con_bak.weibolist.weibo.insert(data)
             for data in userslist:
                 weibo_l_u.insert(data)
 

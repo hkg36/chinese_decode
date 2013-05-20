@@ -47,7 +47,7 @@ if __name__ == '__main__':
     if len(sys.argv)>=2:
         test_mod=sys.argv[1]=='test'
     if test_mod==False:
-        queue=redis.Redis(host='218.241.207.45',port=6379)
+        queue=redis.Redis(host='xcj.server3',port=6379)
         mongodb=pymongo.Connection(env_data.mongo_connect_str)
     """
     测试用户的所有微薄，猜测用户的兴趣 left is end
@@ -60,13 +60,14 @@ if __name__ == '__main__':
 
 
     wordgroup_allcount={}
+    wordgroup_replycount={}
     def lineres(res):
         if res is None:
             return
         for one in res:
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
-    pool=multiprocessing.Pool(processes=1,initializer=proc_init)
+    pool=multiprocessing.Pool(processes=2,initializer=proc_init)
 
     for run_time_count in xrange(1000):
         try:
@@ -92,6 +93,7 @@ if __name__ == '__main__':
         print 'start work weibo_id %d'%weibo_uid
 
         wordgroup_allcount={}
+        wordgroup_replycount={}
 
         client=weibo_tools.DefaultWeiboClient()
         textlist={}
@@ -135,7 +137,7 @@ if __name__ == '__main__':
             if count is not None:
                 groupread.append((wc,count))
         groupread.sort(lambda x,y:-cmp(x[1],y[1]))
-        resgroup=groupread[0:30]
+        resgroup=groupread[0:100]
 
         for line in resgroup:
             print "%s=>%d"%(line[0],line[1]),

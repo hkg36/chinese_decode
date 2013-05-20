@@ -17,7 +17,7 @@ def SplitWeiboInfo(line):
     if not 'user' in line:
         return None
     user=line['user']
-    geo=line['geo']
+    geo=line.get('geo')
     if geo==None:
         return None
     if geo['type']=="Point":
