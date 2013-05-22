@@ -11,6 +11,7 @@ import tools
 import env_data
 import mongo_autoreconnect
 import codecs
+import multiprocessing
 import json
 
 def SplitWeiboInfo(line):
@@ -56,6 +57,85 @@ def SplitWeiboInfo(line):
     #userslist[data['id']]=data
     return (data,user)
 
+client=None
+def InitFun():
+    global client
+    weibo_tools.UseRandomLocalAddress()
+    client= weibo_tools.DefaultWeiboClient()
+
+def FetchPosInfo(pos):
+    global client
+    last_weibo_id=pos['last_weibo_id']
+    readtime=time.time()
+    total_number=0
+    max_id=0
+    has_req_error=False
+    page=1
+
+    userslist={}
+    weiboslist={}
+    while page <= 50:
+        try:
+            place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
+            print 'read_page',page
+            page+=1
+        except weibo_tools.WeiboRequestFail,e:
+            print e
+            if e.httpcode==403:
+                has_req_error=True
+            elif e.httpcode==503:
+                continue
+            break
+        except weibo_tools.APIError,e:
+            print e
+            if e.error_code==10022:
+                has_req_error=True
+                break
+            continue
+        except Exception,e:
+            print e
+            break
+
+        if len(place_res)==0:
+            break
+        #print json.dumps(place_res)
+        if 'statuses' not in place_res:
+            print place_res
+            break
+        statuses=place_res['statuses']
+        if len(statuses)==0:
+            break
+
+        not_go_next_page=False
+        for line in statuses:
+            line_info=SplitWeiboInfo(line)
+            if line_info==None:
+                continue
+            data,user=line_info
+            max_id=max(max_id,data["weibo_id"])
+            if data["weibo_id"]<last_weibo_id:
+                not_go_next_page=True
+            else:
+                total_number+=1
+            weiboslist[data['weibo_id']]=data
+            userslist[user['id']]=user
+
+            retweeted_status=line.get('retweeted_status')
+            if retweeted_status==None:
+                continue
+            line_info=SplitWeiboInfo(retweeted_status)
+            if line_info==None:
+                continue
+            data,user=line_info
+            weiboslist[data['weibo_id']]=data
+            userslist[user['id']]=user
+
+        if not_go_next_page:
+            break
+    print 'id:%d linecount:%d'%(pos['id'],total_number)
+
+    return (weiboslist.values(),userslist.values(),has_req_error,total_number,readtime,max_id)
+
 if __name__ == '__main__':
     #ss=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(1348447055)))
     if not os.path.exists("GeoData"):
@@ -80,16 +160,37 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    weibo_tools.UseRandomLocalAddress()
+    #weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
+
+    work_manage=multiprocessing.Pool(3,InitFun)
+
+    def FetchInfoFinish(res):
+        if res is None:
+            return
+        weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
+        for data in weiboslist:
+            con.weibolist.weibo.insert(data)
+            con_bk.weibolist.weibo.insert(data)
+        for data in userslist:
+            con.weibousers.user.insert(data)
+
+        if has_req_error==False:
+            if total_number>0:
+                pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkweiboid=?,last_checkspan=? where id=?',
+                    (readtime,total_number,max_id,readtime-pos['last_checktime'],pos['id']))
+            else:
+                pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
+                    (readtime,total_number,readtime-pos['last_checktime'],pos['id']))
+            pos_db.commit()
 
     start_work_time=time.time()
     run_start_time=0
     while True:
         if time.time()-start_work_time>60*60:
             print 'self kill'
-            exit(0)
+            break
 
         run_start_time=time.time()
 
@@ -122,92 +223,18 @@ if __name__ == '__main__':
 
         client = weibo_tools.DefaultWeiboClient()
 
+        all_work=[]
         for pos in pos_to_record:
-            last_weibo_id=pos['last_weibo_id']
-            readtime=time.time()
-            total_number=0
-            max_id=0
-            has_req_error=False
-            page=1
-
-            userslist={}
-            weiboslist={}
-            while page <= 50:
-                try:
-                    place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
-                    print 'read_page',page
-                    page+=1
-                except weibo_tools.WeiboRequestFail,e:
-                    print e
-                    if e.httpcode==403:
-                        has_req_error=True
-                    elif e.httpcode==503:
-                        continue
-                    break
-                except weibo_tools.APIError,e:
-                    print e
-                    if e.error_code==10022:
-                        has_req_error=True
-                        break
-                    continue
-                except Exception,e:
-                    print e
-                    break
-
-                if len(place_res)==0:
-                    break
-                #print json.dumps(place_res)
-                if 'statuses' not in place_res:
-                    print place_res
-                    break
-                statuses=place_res['statuses']
-                if len(statuses)==0:
-                    break
-
-                not_go_next_page=False
-                for line in statuses:
-                    line_info=SplitWeiboInfo(line)
-                    if line_info==None:
-                        continue
-                    data,user=line_info
-                    max_id=max(max_id,data["weibo_id"])
-                    if data["weibo_id"]<last_weibo_id:
-                        not_go_next_page=True
-                    else:
-                        total_number+=1
-                    weiboslist[data['weibo_id']]=data
-                    userslist[user['id']]=user
-
-                    retweeted_status=line.get('retweeted_status')
-                    if retweeted_status==None:
-                        continue
-                    line_info=SplitWeiboInfo(retweeted_status)
-                    if line_info==None:
-                        continue
-                    data,user=line_info
-                    weiboslist[data['weibo_id']]=data
-                    userslist[user['id']]=user
-
-                if not_go_next_page:
-                    break
-            print 'id:%d linecount:%d'%(pos['id'],total_number)
-
-            weiboslist=weiboslist.values()
-            userslist=userslist.values()
-
-            for data in weiboslist:
-                con.weibolist.weibo.insert(data)
-                con_bk.weibolist.weibo.insert(data)
-            for data in userslist:
-                con.weibousers.user.insert(data)
-
-            if has_req_error==False:
-                if total_number>0:
-                    pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkweiboid=?,last_checkspan=? where id=?',
-                        (readtime,total_number,max_id,readtime-pos['last_checktime'],pos['id']))
-                else:
-                    pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
-                        (readtime,total_number,readtime-pos['last_checktime'],pos['id']))
-                pos_db.commit()
-            else:
-                time.sleep(50)
+            all_work.append(work_manage.apply_async(FetchPosInfo,(pos,)))
+        while len(all_work)>0:
+            one_finish=False
+            for res in all_work:
+                if res.ready():
+                    one_finish=True
+                    all_work.remove(res)
+                    if res.successful():
+                        FetchInfoFinish(res.get())
+            if one_finish==False:
+                time.sleep(1)
+    work_manage.close()
+    work_manage.join()

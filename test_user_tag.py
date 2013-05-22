@@ -68,7 +68,7 @@ if __name__ == '__main__':
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
     pool=multiprocessing.Pool(processes=2,initializer=proc_init)
-
+    weibo_tools.UseRandomLocalAddress()
     for run_time_count in xrange(1000):
         try:
             if test_mod==False:
