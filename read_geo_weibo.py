@@ -11,7 +11,7 @@ import tools
 import env_data
 import mongo_autoreconnect
 import codecs
-import multiprocessing
+import multithread
 import json
 
 def SplitWeiboInfo(line):
@@ -57,14 +57,10 @@ def SplitWeiboInfo(line):
     #userslist[data['id']]=data
     return (data,user)
 
-client=None
-def InitFun():
-    global client
-    weibo_tools.UseRandomLocalAddress()
-    client= weibo_tools.DefaultWeiboClient()
+def InitFun(arg):
+    return weibo_tools.DefaultWeiboClient()
 
-def FetchPosInfo(pos):
-    global client
+def FetchPosInfo(client,pos):
     last_weibo_id=pos['last_weibo_id']
     readtime=time.time()
     total_number=0
@@ -160,13 +156,16 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    #weibo_tools.UseRandomLocalAddress()
+    weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
 
-    work_manage=multiprocessing.Pool(3,InitFun)
+    work_manage=multithread.WorkManager(3,InitFun)
 
-    def FetchInfoFinish(res):
+    def FetchInfoFinish(res,error):
+        if error is not None:
+            print str(error)
+            return
         if res is None:
             return
         weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
@@ -223,18 +222,7 @@ if __name__ == '__main__':
 
         client = weibo_tools.DefaultWeiboClient()
 
-        all_work=[]
         for pos in pos_to_record:
-            all_work.append(work_manage.apply_async(FetchPosInfo,(pos,)))
-        while len(all_work)>0:
-            one_finish=False
-            for res in all_work:
-                if res.ready():
-                    one_finish=True
-                    all_work.remove(res)
-                    if res.successful():
-                        FetchInfoFinish(res.get())
-            if one_finish==False:
-                time.sleep(1)
-    work_manage.close()
-    work_manage.join()
+            work_manage.add_job(FetchPosInfo,pos,FetchInfoFinish)
+        work_manage.wait_allworkcomplete()
+    work_manage.wait_allthreadcomplete()

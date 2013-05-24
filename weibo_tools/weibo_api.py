@@ -10,8 +10,10 @@ import urllib
 import socket
 import re
 import logging
-import pycurl
+import httplib
 import random
+import urlparse
+import gzip
 from cStringIO import StringIO
 API_RemoteIP=None
 InterfaceIP=None
@@ -103,7 +105,7 @@ class WeiboRequestFail(Exception):
         self.httpcode=httpcode
         self.msg=msg
         try:
-            self.error_data=json.loads(msg)
+            self.error_data=json.decode(msg)
         except Exception,e:
             print e
             self.error_data={}
@@ -122,40 +124,36 @@ def _http_call(url, method, authorization, **kw):
         params, boundary = _encode_multipart(**kw)
     else:
         params = _encode_params(**kw)
-    http_url = '%s?%s' % (url, params) if method==_HTTP_GET else url
+    urlpart=urlparse.urlparse(url)
+    http_path = '%s?%s' % (urlpart.path, params) if method==_HTTP_GET else urlpart.path
     http_body = None if method==_HTTP_GET else params
-
-    httpheaders=[]
+    httpheaders={"Host": urlpart.netloc,
+                "Accept-Encoding":"gzip"}
     if authorization:
-        httpheaders.append('Authorization: OAuth2 %s' % authorization)
+        httpheaders['Authorization']='OAuth2 %s' % authorization
     if API_RemoteIP:
-        httpheaders.append('API-RemoteIP:%s'%API_RemoteIP)
+        httpheaders['API-RemoteIP']=API_RemoteIP
     if boundary:
-        httpheaders.append('Content-Type: multipart/form-data; boundary=%s' % boundary)
+        httpheaders['Content-Type']='multipart/form-data; boundary=%s' % boundary
+    if method==_HTTP_POST and http_body is not None:
+        httpheaders["Content-Type"]="application/x-www-form-urlencoded"
 
-    curl=pycurl.Curl()
-    curl.setopt(pycurl.URL,http_url)
-    curl.setopt(pycurl.TIMEOUT, 20)
-    curl.setopt(pycurl.HTTPHEADER,httpheaders)
-    curl.setopt(pycurl.ENCODING,"gzip")
-    if http_body:
-        curl.setopt(pycurl.POSTFIELDS,http_body)
-
-    b = StringIO()
-    curl.setopt(pycurl.WRITEFUNCTION, b.write)
-    curl.setopt(pycurl.FOLLOWLOCATION, 1)
-    curl.setopt(pycurl.MAXREDIRS, 5)
+    source_addr=None
     if InterfaceIP is not None:
         if isinstance(InterfaceIP,list) and len(InterfaceIP)>0:
-            curl.setopt(pycurl.INTERFACE,InterfaceIP[random.randint(0,len(InterfaceIP)-1)])
+            source_addr=InterfaceIP[random.randint(0,len(InterfaceIP)-1)]
         elif (isinstance(InterfaceIP,str) or isinstance(InterfaceIP,unicode)) and len(InterfaceIP)>0:
-            curl.setopt(pycurl.INTERFACE,InterfaceIP)
-    curl.perform()
-    if curl.getinfo(pycurl.HTTP_CODE)!=200:
-        raise WeiboRequestFail(curl.getinfo(pycurl.HTTP_CODE),b.getvalue())
-    b.seek(0)
+            source_addr=InterfaceIP
 
-    r = json.load(b)
+    conn = httplib.HTTPSConnection(urlpart.netloc,source_address=(source_addr,0))
+    conn.request('POST' if method==_HTTP_POST else 'GET', http_path, headers =httpheaders
+                ,body=http_body)
+
+    res = conn.getresponse()
+    resbody=res.read()
+    if res.getheader('Content-Encoding')=='gzip':
+        resbody=gzip.GzipFile(mode='rb',fileobj=StringIO(resbody)).read()
+    r = json.loads(resbody)
     if 'error_code' in r:
         raise APIError(r['error_code'], r.get('error', ''),r.get('request', ''))
     return r

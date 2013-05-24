@@ -30,11 +30,12 @@ class WorkManager(object):
             if callback is not None:
                 callback(res,error_info)
     def wait_allworkcomplete(self):
-        while self.work_queue.empty():
+        while self.work_queue.empty()==False:
             self.check_result()
-            time.sleep(0.01)
+            time.sleep(0.1)
+        self.work_queue.join()
         self.check_result()
-    def wait_allcomplete(self):
+    def wait_allthreadcomplete(self):
         self.check_result()
         for item in self.threads:
             item.keepwork=False
@@ -64,8 +65,8 @@ class Work(threading.Thread):
                     res=do(self.thread_init_data,args)
                 except Exception,e:
                     error_info
-                self.work_queue.task_done()
                 self.result_queue.put((callback,res,error_info))
+                self.work_queue.task_done()
             except Queue.Empty:
                 if self.keepwork:
                     continue
