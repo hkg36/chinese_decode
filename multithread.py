@@ -10,7 +10,10 @@ class WorkManager(object):
         self.threads = []
 
         for i in range(thread_num):
-            self.threads.append(Work(self.work_queue,self.reault_queue,thread_init_fun,thread_init_data))
+            workthread=Work(self.work_queue,self.reault_queue,thread_init_fun,thread_init_data)
+            workthread.setDaemon(True)
+            workthread.start()
+            self.threads.append(workthread)
 
     def add_job(self, func, args,callback=None):
         self.work_queue.put((func, args ,callback))
@@ -28,7 +31,10 @@ class WorkManager(object):
                 break
             self.reault_queue.task_done()
             if callback is not None:
-                callback(res,error_info)
+                try:
+                    callback(res,error_info)
+                except Exception,e:
+                    print "call back fail",str(e)
     def wait_allworkcomplete(self):
         while self.work_queue.empty()==False:
             self.check_result()
@@ -36,12 +42,11 @@ class WorkManager(object):
         self.work_queue.join()
         self.check_result()
     def wait_allthreadcomplete(self):
-        self.check_result()
         for item in self.threads:
             item.keepwork=False
+        self.wait_allworkcomplete()
         for item in self.threads:
             if item.isAlive():item.join()
-        self.check_result()
 
 class Work(threading.Thread):
     def __init__(self, work_queue,result_queue,init_fun=None,init_arg=None):
@@ -52,7 +57,6 @@ class Work(threading.Thread):
         self.init_fun=init_fun
         self.init_arg=init_arg
         self.thread_init_data=None
-        self.start()
 
     def run(self):
         if self.init_fun:
@@ -85,6 +89,7 @@ if __name__ == '__main__':
     def do_job(thread_data,args):
         global data_num
         data_num+=args[0]
+        time.sleep(10)
         return args[0]
     def print_res(res,error_info):
         print res
@@ -95,7 +100,7 @@ if __name__ == '__main__':
     work_manager.wait_allworkcomplete()
     for i in xrange(50,101):
         work_manager.add_job(do_job,(i,),callback=print_res)
-    work_manager.wait_allcomplete()
+    work_manager.wait_allthreadcomplete()
     end = time.time()
     print data_num
     print "cost all time: %s" % (end-start)
