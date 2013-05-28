@@ -4,6 +4,12 @@ import threading
 import time
 
 class WorkManager(object):
+    class Task:
+        back_fun=None
+        back_arg=None
+        error=None
+        result=None
+        callback=None
     def __init__(self, thread_num=2 ,thread_init_fun=None,thread_init_data=None):
         self.work_queue = Queue.Queue()
         self.reault_queue = Queue.Queue()
@@ -16,7 +22,11 @@ class WorkManager(object):
             self.threads.append(workthread)
 
     def add_job(self, func, args,callback=None):
-        self.work_queue.put((func, args ,callback))
+        task=WorkManager.Task()
+        task.back_fun=func
+        task.back_arg=args
+        task.callback=callback
+        self.work_queue.put(task)
         self.check_result()
 
     def check_queue(self):
@@ -26,13 +36,13 @@ class WorkManager(object):
     def check_result(self):
         while True:
             try:
-                callback,res,error_info=self.reault_queue.get(block=False)
+                task=self.reault_queue.get(block=False)
             except Queue.Empty,e:
                 break
             self.reault_queue.task_done()
-            if callback is not None:
+            if task.callback is not None:
                 try:
-                    callback(res,error_info)
+                    task.callback(task.result,task.error)
                 except Exception,e:
                     print "call back fail",str(e)
     def wait_allworkcomplete(self):
@@ -47,6 +57,9 @@ class WorkManager(object):
         self.wait_allworkcomplete()
         for item in self.threads:
             if item.isAlive():item.join()
+    def terminate(self):
+        for item in self.threads:
+            item.keepwork=False
 
 class Work(threading.Thread):
     def __init__(self, work_queue,result_queue,init_fun=None,init_arg=None):
@@ -63,13 +76,13 @@ class Work(threading.Thread):
             self.thread_init_data=self.init_fun(self.init_arg)
         while True:
             try:
-                do, args ,callback= self.work_queue.get(block=True,timeout=1)
+                task= self.work_queue.get(block=True,timeout=1)
                 error_info=None
                 try:
-                    res=do(self.thread_init_data,args)
+                    task.result=task.back_fun(self.thread_init_data,task.back_arg)
                 except Exception,e:
-                    error_info
-                self.result_queue.put((callback,res,error_info))
+                    task.error=e
+                self.result_queue.put(task)
                 self.work_queue.task_done()
             except Queue.Empty:
                 if self.keepwork:

@@ -187,9 +187,9 @@ if __name__ == '__main__':
     start_work_time=time.time()
     run_start_time=0
     while True:
-        if time.time()-start_work_time>60*60:
+        """if time.time()-start_work_time>60*60:
             print 'self kill'
-            break
+            break"""
 
         run_start_time=time.time()
 
