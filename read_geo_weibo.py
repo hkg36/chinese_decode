@@ -130,7 +130,7 @@ def FetchPosInfo(client,pos):
             break
     print 'id:%d linecount:%d'%(pos['id'],total_number)
 
-    return (weiboslist.values(),userslist.values(),has_req_error,total_number,readtime,max_id)
+    return (pos,weiboslist.values(),userslist.values(),has_req_error,total_number,readtime,max_id)
 
 if __name__ == '__main__':
     #ss=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(1348447055)))
@@ -168,7 +168,7 @@ if __name__ == '__main__':
             return
         if res is None:
             return
-        weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
+        pos,weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
         for data in weiboslist:
             con.weibolist.weibo.insert(data)
             con_bk.weibolist.weibo.insert(data)
