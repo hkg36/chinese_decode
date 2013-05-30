@@ -7,6 +7,7 @@ import mongo_autoreconnect
 import tools
 
 if __name__ == '__main__':
+    weibo_tools.UseRandomLocalAddress()
     con_bak=pymongo.Connection(env_data.mongo_connect_str_backup,read_preference=pymongo.ReadPreference.PRIMARY)
 
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)

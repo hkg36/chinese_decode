@@ -153,7 +153,7 @@ class WordTree:
             freq=word_freq_list[word]
             addedCell=self.AddWordToTree(word)
             addedCell.freq=freq
-            addedCell.weight=freq**(1.0/2)
+            addedCell.weight=1/math.log(freq,math.e)
     def LoadHudongbaikeWords(self):
         fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz','r')
         word_group=json.load(fp)
@@ -322,15 +322,12 @@ class LineSpliter:
                 for index in xrange(start_pos,len(self.found_word)-1):
                     pre_word=self.found_word[index-1]
                     aft_word=self.found_word[index+1]
-                    now_word=self.found_word[index]
 
-                    for i2 in xrange(1,len(now_word.word)):
-                        if pre_word.word.endswith(now_word.word[0:i2]):
-                            if aft_word.word.startswith(now_word.word[i2:]):
-                                start_pos=max(start_pos-1,1)
-                                gorecheck=True
-                                del self.found_word[index]
-                                break
+                    if pre_word.pos+len(pre_word.word)==aft_word.pos:
+                        start_pos=max(start_pos-1,1)
+                        gorecheck=True
+                        del self.found_word[index]
+                        break
                     if gorecheck:
                         break
             if gorecheck==False:
@@ -350,30 +347,31 @@ class LineSpliter:
         for index in xrange(len(self.found_word)-1,0,-1):
             aft_word=self.found_word[index]
             now_word=self.found_word[index-1]
-            if now_word.pos+len(now_word.word)<=aft_word.pos:
+
+            i2=now_word.pos+len(now_word.word)-aft_word.pos
+            if i2<=0:
                 continue
-            for i2 in xrange(1,len(aft_word.word)):
-                word_pice=aft_word.word[0:i2]
-                if now_word.word.endswith(word_pice):
-                    if (now_word.info!=None and aft_word.info!=None) and (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>2):
-                        #字归后词 重新拆分前词
-                        new_word=now_word.word
-                        new_word=new_word[0:len(new_word)-i2]
-                        new_found=self.BaseSplitLine(new_word)
-                        for found in new_found:
-                            found.pos+=now_word.pos
-                        del self.found_word[index-1]
-                        self.found_word.extend(new_found)
-                        self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
-                        break
-                    new_word=aft_word.word[i2:]
-                    new_found=self.BaseSplitLine(new_word)
-                    offset_index=aft_word.pos+i2
-                    for found in new_found:
-                        found.pos+=offset_index
-                    del self.found_word[index]
-                    self.found_word.extend(new_found)
-                    self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
+
+            if (now_word.info!=None and aft_word.info!=None) and\
+                    (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>2):
+                #字归后词 重新拆分前词
+                new_word=now_word.word
+                new_word=new_word[0:len(new_word)-i2]
+                new_found=self.BaseSplitLine(new_word)
+                for found in new_found:
+                    found.pos+=now_word.pos
+                del self.found_word[index-1]
+                self.found_word.extend(new_found)
+                self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
+            else:
+                new_word=aft_word.word[i2:]
+                new_found=self.BaseSplitLine(new_word)
+                offset_index=aft_word.pos+i2
+                for found in new_found:
+                    found.pos+=offset_index
+                del self.found_word[index]
+                self.found_word.extend(new_found)
+                self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
 
 
     def CheckTail(self):
@@ -592,7 +590,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"倪志福同志永垂不朽"
+    #full_text=u"才从家人及网络得知公安机关在本省和邻省进行全力抓捕"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
