@@ -5,7 +5,7 @@ import weibo_bot
 import codecs
 if __name__ == '__main__':
     grouptree=decoder.GroupFinder()
-    grouptree.BuildTree()
+    grouptree.LoadTree()
     grouptree.StartCountGroup()
     word_dict_root=decoder.LoadDefaultWordDic()
 
