@@ -37,16 +37,7 @@ class DbTree:
         self.db = None
         self.cursor=None
 
-        if worddict:
-            self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/dbindex')
-        else:
-            self.dbFileFinder=None
-            home_dir='/app_data/chinese_decode/dictdb'
-            self.dbenv = bsddb3.db.DBEnv()
-            self.dbenv.open(home_dir, db_env_flag)
-            self.db = bsddb3.db.DB(self.dbenv)
-            self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_RDONLY, 0666)
-            self.cursor=self.db.cursor()
+        self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/dbindex')
 
         f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
         fnlist=set()
@@ -57,25 +48,18 @@ class DbTree:
     def findword(self,word):
         word_find=word.encode('utf8')
         res=None
-        if self.dbFileFinder:
-            res=self.dbFileFinder.findString(word_find)
-            if res!=None:
-                res=res.decode('utf8');
-        else:
-            res = self.cursor.get(word_find,bsddb3.db.DB_SET_RANGE)
-            if res!=None:
-                res=res[0].decode('utf8');
+        res=self.dbFileFinder.findString(word_find)
+        if res!=None:
+            res=res.decode('utf8')
         return res
     def getwordinfo(self,word):
         word_find=word.encode('utf8')
         res=None
-        if self.dbFileFinder:
-            word_res=self.dbFileFinder.findString(word_find)
-            www=self.dbFileFinder.lastFoundString()
-            if word_res == word_find:
-                res=self.dbFileFinder.lastFoundValue()
-        else:
-            res=self.db.get(word_find)
+
+        word_res=self.dbFileFinder.findString(word_find)
+        if word_res == word_find:
+            res=self.dbFileFinder.lastFoundValue()
+
         if res!=None and len(res)>0:
             return pickle.loads(res)
         return None
@@ -466,7 +450,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"才从家人及网络得知公安机关在本省和邻省进行全力抓捕"
+    #full_text=u"是默多克的第三任妻子"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
