@@ -14,13 +14,14 @@ class WorkManager(object):
         self.work_queue = Queue.Queue()
         self.reault_queue = Queue.Queue()
         self.threads = []
+        self.thread_init_fun=thread_init_fun
+        self.thread_init_data=thread_init_data
 
         for i in range(thread_num):
-            workthread=Work(self.work_queue,self.reault_queue,thread_init_fun,thread_init_data)
+            workthread=Work(self.work_queue,self.reault_queue,self.thread_init_fun,self.thread_init_data)
             workthread.setDaemon(True)
             workthread.start()
             self.threads.append(workthread)
-
     def add_job(self, func, args,callback=None):
         task=WorkManager.Task()
         task.back_fun=func
@@ -74,7 +75,7 @@ class Work(threading.Thread):
     def run(self):
         if self.init_fun:
             self.thread_init_data=self.init_fun(self.init_arg)
-        while True:
+        while self.keepwork:
             try:
                 task= self.work_queue.get(block=True,timeout=1)
                 error_info=None
@@ -84,28 +85,26 @@ class Work(threading.Thread):
                     task.error=e
                 self.result_queue.put(task)
                 self.work_queue.task_done()
-            except Queue.Empty:
-                if self.keepwork:
-                    continue
-                else:
-                    break
             except Exception,e:
                 print str(e)
 
 
 
 if __name__ == '__main__':
+    import httplib
     #具体要做的任务
     def thread_init(arg):
         return arg
     data_num=0
     def do_job(thread_data,args):
         global data_num
-        data_num+=args[0]
-        time.sleep(10)
-        return args[0]
+        conn = httplib.HTTPConnection("www.baidu.com")
+        conn.request('GET', '/', headers = {"Host": "www.baidu.com"})
+        res = conn.getresponse()
+        resbody=res.read()
+        return resbody
     def print_res(res,error_info):
-        print res
+        print res,error_info
     start = time.time()
     work_manager =  WorkManager(2,thread_init,"i am ok")
     for i in xrange(50):

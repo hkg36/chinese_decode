@@ -134,33 +134,23 @@ class LineSpliter:
             if len(process_work)==0:
                 process_work.append(SearchWork(index,self.search_root))
             next_round_process_word=[]
-            need_create_new_process=False
-            has_one_success=False
             for one_proc in process_work:
                 res=one_proc.test_next_word(char) #检查下一个字
                 if isinstance(res,FoundWord):
-                    has_one_success=True
                     found_word.append(res)
                     next_round_process_word.append(one_proc)
-                    need_create_new_process=True
                 elif res==True:
-                    has_one_success=True
                     next_round_process_word.append(one_proc)
                     #else:
                 #    ProcessCellDie(one_proc)
 
-            if has_one_success==False:
-                sw=SearchWork(index,self.search_root)
-                res=sw.test_next_word(char)
-                if isinstance(res,FoundWord):
-                    found_word.append(res)
-                    next_round_process_word.append(sw)
-                elif res==True:
-                    next_round_process_word.append(sw)
-                    need_create_new_process=False
-
-            if need_create_new_process:
-                next_round_process_word.append(SearchWork(index+1,self.search_root))
+            sw=SearchWork(index,self.search_root)
+            res=sw.test_next_word(char)
+            if isinstance(res,FoundWord):
+                found_word.append(res)
+                next_round_process_word.append(sw)
+            elif res==True:
+                next_round_process_word.append(sw)
 
             process_work=next_round_process_word
 
@@ -450,7 +440,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"是默多克的第三任妻子"
+    #full_text=u"核心提示|被扇耳光"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:

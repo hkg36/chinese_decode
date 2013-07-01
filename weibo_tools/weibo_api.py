@@ -145,7 +145,7 @@ def _http_call(url, method, authorization, **kw):
         elif (isinstance(InterfaceIP,str) or isinstance(InterfaceIP,unicode)) and len(InterfaceIP)>0:
             source_addr=InterfaceIP
 
-    conn = httplib.HTTPSConnection(urlpart.netloc,source_address=(source_addr,0))
+    conn = httplib.HTTPSConnection(urlpart.netloc,source_address=(source_addr,0),timeout=20)
     conn.request('POST' if method==_HTTP_POST else 'GET', http_path, headers =httpheaders
                 ,body=http_body)
 

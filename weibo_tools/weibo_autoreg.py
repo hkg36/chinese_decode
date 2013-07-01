@@ -56,7 +56,7 @@ def GetWeiboOauth(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw):
         }
     reqstring=urllib.urlencode(reqdata)
 
-    conn = httplib.HTTPSConnection("api.weibo.com",httplib.HTTPS_PORT)
+    conn = httplib.HTTPSConnection("api.weibo.com",httplib.HTTPS_PORT,timeout=20)
     conn.request('POST', '/oauth2/authorize', headers = {"Host": "api.weibo.com",
                                     'Referer':url_1,
                                     "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/21.0.1)",
