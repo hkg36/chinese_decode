@@ -98,7 +98,7 @@ if __name__ == '__main__':
     data_num=0
     def do_job(thread_data,args):
         global data_num
-        conn = httplib.HTTPConnection("www.baidu.com")
+        conn = httplib.HTTPConnection("www.baidu.com",timeout=10)
         conn.request('GET', '/', headers = {"Host": "www.baidu.com"})
         res = conn.getresponse()
         resbody=res.read()

@@ -203,9 +203,11 @@ if __name__ == '__main__':
             if last_checkcount==0:
                 if this_span>30*60:
                     go_check=True
-            elif this_span>24*60*60:
+            elif this_span>6*60*60:
                 go_check=True
             elif last_checkspan==0:
+                go_check=True
+            elif last_checkspan>6*60*60:
                 go_check=True
             else:
                 this_may_read=float(last_checkcount)/last_checkspan*this_span
