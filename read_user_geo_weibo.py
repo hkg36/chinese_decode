@@ -16,9 +16,6 @@ if __name__ == '__main__':
 
     start_work_time=time.time()
     while True:
-        if time.time()-start_work_time>60*60:
-            print 'self kill'
-            exit(0)
         client = weibo_tools.DefaultWeiboClient()
 
         before_time=time.time()-60*60*24

@@ -2,6 +2,7 @@
 import Queue
 import threading
 import time
+import traceback
 
 class WorkManager(object):
     class Task:
@@ -74,8 +75,12 @@ class Work(threading.Thread):
 
     def run(self):
         if self.init_fun:
-            self.thread_init_data=self.init_fun(self.init_arg)
-        while self.keepwork:
+            try:
+                self.thread_init_data=self.init_fun(self.init_arg)
+            except Exception,e:
+                print e
+                print traceback.format_exc()
+        while True:
             try:
                 task= self.work_queue.get(block=True,timeout=1)
                 error_info=None
@@ -85,29 +90,36 @@ class Work(threading.Thread):
                     task.error=e
                 self.result_queue.put(task)
                 self.work_queue.task_done()
+            except Queue.Empty,e:
+                #must complete all work,not quite if still work to do when keepwork=False
+                if self.keepwork:
+                    time.sleep(0.1)
+                else:
+                    break
             except Exception,e:
                 print str(e)
-
-
+                print traceback.format_exc()
+        print 'work thread out'
 
 if __name__ == '__main__':
     import httplib
+    import random
+    ss=['ddddd','ffffff','gggggg']
     #具体要做的任务
     def thread_init(arg):
         return arg
     data_num=0
     def do_job(thread_data,args):
         global data_num
-        conn = httplib.HTTPConnection("www.baidu.com",timeout=10)
-        conn.request('GET', '/', headers = {"Host": "www.baidu.com"})
-        res = conn.getresponse()
-        resbody=res.read()
-        return resbody
+        global ss
+        return ss[random.randint(0,len(ss)-1)]
     def print_res(res,error_info):
+        if res is None:
+            a=0
         print res,error_info
     start = time.time()
-    work_manager =  WorkManager(2,thread_init,"i am ok")
-    for i in xrange(50):
+    work_manager =  WorkManager(10,thread_init,"i am ok")
+    for i in xrange(5000):
         work_manager.add_job(do_job,(i,),callback=print_res)
     work_manager.wait_allworkcomplete()
     for i in xrange(50,101):
