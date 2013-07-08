@@ -19,6 +19,8 @@ if __name__ == '__main__':
     for content, in dc:
         spliter=decoder.LineSpliter(word_dict_root)
         spliter.SplitLine(content)
+        spliter.CheckCantantPre()
+        spliter.CheckTail()
         for word in spliter.found_word:
             if word.is_no_cn:
                 continue
