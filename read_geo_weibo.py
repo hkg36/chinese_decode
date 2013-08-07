@@ -1,5 +1,5 @@
 #-*-coding:utf-8-*-
-import weibo_tools
+import QueueClient
 import sqlite3
 import time
 from datetime import datetime
@@ -57,8 +57,14 @@ def SplitWeiboInfo(line):
     #userslist[data['id']]=data
     return (data,user)
 
+Queue_User='spider'
+Queue_PassWord='spider'
+Queue_Server='124.207.209.57'
+Queue_Port=None
+Queue_Path='/spider'
+
 def InitFun(arg):
-    return weibo_tools.DefaultWeiboClient()
+    return None
 
 def FetchPosInfo(client,pos):
     last_weibo_id=pos['last_weibo_id']
@@ -67,27 +73,17 @@ def FetchPosInfo(client,pos):
     max_id=0
     has_req_error=False
     page=1
-
+    client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
     userslist={}
     weiboslist={}
     while page <= 50:
         try:
-            place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
+            client.AddTask({'function':'place__nearby_timeline','params':{"lat":str(pos['lat']),"long":str(pos['lng']),"range":11000,"count":50,"page":page,"offset":1}})
+            headers,body=client.WaitResult()
+            place_res=json.loads(body)
+            #place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
             print 'read_page',page
             page+=1
-        except weibo_tools.WeiboRequestFail,e:
-            print e
-            if e.httpcode==403:
-                has_req_error=True
-            elif e.httpcode==503:
-                continue
-            break
-        except weibo_tools.APIError,e:
-            print e
-            if e.error_code==10022:
-                has_req_error=True
-                break
-            continue
         except Exception,e:
             print e
             break
@@ -129,7 +125,7 @@ def FetchPosInfo(client,pos):
         if not_go_next_page:
             break
     print 'id:%d linecount:%d'%(pos['id'],total_number)
-
+    client.Close()
     return (pos,weiboslist.values(),userslist.values(),has_req_error,total_number,readtime,max_id)
 
 if __name__ == '__main__':
@@ -156,7 +152,7 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    weibo_tools.UseRandomLocalAddress()
+    #weibo_tools.UseRandomLocalAddress()
     #con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     #con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
 
@@ -221,8 +217,6 @@ if __name__ == '__main__':
             print 'sleep for not thing to update'
             time.sleep(20)
             continue
-
-        client = weibo_tools.DefaultWeiboClient()
 
         for pos in pos_to_record:
             work_manage.add_job(FetchPosInfo,pos,FetchInfoFinish)

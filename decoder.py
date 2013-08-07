@@ -2,7 +2,6 @@
 import re
 import string
 import codecs
-import bsddb3
 import os
 import pickle
 import math
@@ -27,7 +26,6 @@ class WordCell:
     weight=0
     wordgroup=None
 
-db_env_flag=bsddb3.db.DB_CREATE | bsddb3.db.DB_INIT_MPOOL| bsddb3.db.DB_INIT_TXN | bsddb3.db.DB_INIT_LOCK | bsddb3.db.DB_RECOVER
 class DbTree:
     dbenv=None
     db=None
