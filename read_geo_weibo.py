@@ -85,7 +85,7 @@ def FetchPosInfo(client,pos):
             print 'read_page',page
             page+=1
         except Exception,e:
-            print e
+            print e,body
             break
 
         if len(place_res)==0:
