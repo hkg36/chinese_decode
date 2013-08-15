@@ -16,4 +16,4 @@ if __name__ == '__main__':
         pass
     finally:
         if proc and proc.returncode is None:
-            proc.terminate();
+            proc.kill()

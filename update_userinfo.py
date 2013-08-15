@@ -1,35 +1,57 @@
 #-*-coding:utf-8-*-
+import QueueClient
 import pymongo
-import weibo_tools
 import time
 import tools
 import env_data
 import mongo_autoreconnect
 import json
 import multithread
+import gzip
+from cStringIO import StringIO
+
+Queue_User='spider'
+Queue_PassWord='spider'
+Queue_Server='124.207.209.57'
+Queue_Port=None
+Queue_Path='/spider'
+
+FullInfoVersion=2
 
 def ThreadInit(args):
-    return weibo_tools.DefaultWeiboClient()
+    return None
 def ProcWork(client,data):
     try:
-        newdata=client.users__show(uid=data['id'])
-        print data['id']
+        client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+        client.AddTask({'function':'users__show','params':{"uid":str(data['id'])}})
+        headers,body=client.WaitResult()
+        if headers.get('error')==1:
+            if headers.get('httpcode',0)==400 and headers.get('weiboerror',0)==20003:
+                client.Close()
+                return (data['id'],{'is_full_info':-1})
+        newdata=json.loads(body)
+
         if newdata.has_key('status'):
             status=newdata.pop('status')
-        tags=client.tags(uid=data['id'],count=200)
+        client.AddTask({'function':'tags','params':{'uid':str(data['id']),'count':200}})
+        headers,body=client.WaitResult()
+        tags=json.loads(body)
         newdata['tags']=tags
         newdata["is_full_info"]=FullInfoVersion
         newdata['full_info_time']=time.time()
-        friend_res=client.friendships__friends__ids(uid=data['id'],count=5000)
+
+        client.AddTask({'function':'friendships__friends__ids','params':{'uid':str(data['id']),'count':5000}})
+        headers,body=client.WaitResult()
+        friend_res=json.loads(body)
         if 'ids' in friend_res:
             ids=friend_res['ids']
             newdata['friend_list']=ids
+
+        client.Close()
         return (data['id'],newdata)
-    except weibo_tools.WeiboRequestFail,e:
-        if e.httpcode==400:
-            if e.error_data.get('error_code',0)==20003:
-                 return (data['id'],{'is_full_info':-1})
-    return None
+    except Exception,e:
+        print e
+
 def ProcResult(result,errorinfo):
     if errorinfo is not None:
         print str(errorinfo)
@@ -37,15 +59,19 @@ def ProcResult(result,errorinfo):
     if result is None:
         return
     id,newdata=result
-    weibo_l_u.update({'id':id},{'$set':newdata})
+    if newdata['is_full_info']==-1:
+        print id,'NE'
+        weibo_l_u.update({'id':id},{'$set':{'is_full_info':-1}})
+    else:
+        print id
+        weibo_l_u.update({'id':id},newdata)
+
 if __name__ == '__main__':
-    weibo_tools.UseRandomLocalAddress()
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_u=con.weibousers.user
 
-    workpool=multithread.WorkManager(3,thread_init_fun=ThreadInit)
+    workpool=multithread.WorkManager(4,thread_init_fun=ThreadInit)
     start_work_time=time.time()
-    FullInfoVersion=2
     while True:
         users=[]
         with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
@@ -60,33 +86,8 @@ if __name__ == '__main__':
         if len(users)==0:
             time.sleep(60*60)
             continue
-        #client = weibo_tools.DefaultWeiboClient()
+
         for data in users:
             workpool.add_job(ProcWork,data,ProcResult)
         workpool.wait_allworkcomplete()
     workpool.wait_allthreadcomplete()
-
-    """try:
-        newdata=client.users__show(uid=data['id'])
-        print data['id']
-        if newdata.has_key('status'):
-            status=newdata.pop('status')
-        tags=client.tags(uid=data['id'],count=200)
-        newdata['tags']=tags
-        newdata["is_full_info"]=FullInfoVersion
-        newdata['full_info_time']=time.time()
-        friend_res=client.friendships__friends__ids(uid=data['id'],count=5000)
-        if 'ids' in friend_res:
-            ids=friend_res['ids']
-            newdata['friend_list']=ids
-        weibo_l_u.update({'id':data['id']},{'$set':newdata})
-    except weibo_tools.WeiboRequestFail,e:
-        if e.httpcode==400:
-            if e.error_data.get('error_code',0)==20003:
-                weibo_l_u.update({'id':data['id']},{'$set':{'is_full_info':-1}})
-        elif e.httpcode==403:
-            time.sleep(50)
-        print e,data['id']
-    except Exception,e:
-        print e
-        time.sleep(1)"""

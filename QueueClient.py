@@ -1,7 +1,7 @@
 #-*-coding:utf-8-*-
 import gzip
 from cStringIO import StringIO
-import time
+import uuid,time
 import pika
 import logging
 logging.getLogger('pika').setLevel(logging.ERROR)
@@ -57,6 +57,51 @@ class QueueClient(object):
     def Close(self):
         self.channel.close()
         self.connection.close()
+class Task(object):
+    def __init__(self):
+        self.request_headers=None
+        self.request_body=''
+        self.uuid=str(uuid.uuid4())
+        self.result_headers=None
+        self.result_body=None
+    def StepFinish(self,taskqueueclient):
+        pass
+class TaskQueueClient(QueueClient):
+    tasklist={}
+    def AddTask(self,task):
+        self.tasklist[task.uuid]=task
+        task.add_time=time.time()
+        properties=pika.BasicProperties(delivery_mode = 2,headers=task.request_headers,reply_to = self.callback_queue,
+                                        correlation_id=task.uuid)
+        self.task_count+=1
+        self.channel.basic_publish(exchange='',routing_key=self.queue_name,body=task.request_body,properties=properties)
+    def RemoveTask(self,task):
+        self.tasklist.pop(task.uuid)
+    def on_response(self,ch, method, props, body):
+        if ch is None or method is None or props is None or body is None:
+            print "empty callback"
+            return
+        self.last_result_headers=props.headers
+        self.last_result_body=body
+        self.task_count-=1
+        task=self.tasklist.pop(props.correlation_id)
+        if task:
+            try:
+                task.result_headers=props.headers
+                task.result_body=body
+                task.StepFinish(self)
+            except Exception,e:
+                print e
+    def WaitResult(self):
+        while self.task_count:
+            self.connection.process_data_events()
+
+            nowtime=time.time()
+            for uuid in self.tasklist:
+                task=self.tasklist[uuid]
+                if nowtime-task.add_time>300:
+                    self.tasklist.pop(uuid)
+        return self.last_result_headers,self.last_result_body
 class HttpQueueClient(QueueClient):
     def ProcessResult(self,headers,body):
         if headers.get('zip'):
@@ -89,9 +134,29 @@ class WeiboQueueClient(QueueClient):
             body = f.read()
         self.last_result_body=body
 if __name__ == '__main__':
-    import logging
-    logging.getLogger('pika').setLevel(logging.ERROR)
-    client=HttpQueueClient(config.Queue_Server,config.Queue_Port,config.Queue_Path,config.Queue_User,config.Queue_PassWord,'net_request',True)
+    Queue_User='spider'
+    Queue_PassWord='spider'
+    Queue_Server='124.207.209.57'
+    Queue_Port=None
+    Queue_Path='/spider'
+
+    class HttpTask(Task):
+        def StepFinish(self,taskqueueclient):
+            if self.result_headers.get('zip'):
+                buf = StringIO(self.result_body)
+                f = gzip.GzipFile(fileobj=buf)
+                self.result_body = f.read()
+            print self.result_body
+            #taskqueueclient.AddTask(self)
+    client=TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'net_request',True)
+    task=HttpTask()
+    task.request_headers={'url':'https://www.google.com.hk'}
+    client.AddTask(task)
+    client.WaitResult()
+    client.Close()
+    exit(0)
+
+    client=HttpQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'net_request',True)
     client.AddTask({'url':'https://www.google.com.hk'})
     client.AddTask({'url':'http://reg.taobao.com/member/newRegister.jhtml?tg=&&rdn=&timearg=0&tt=0',
                     'ref':'http://reg.taobao.com/member/new_register.jhtml?spm=1.1000386.5982201.2.kd3xp1&from=tbtop&ex_info=&ex_sign=',
