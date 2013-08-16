@@ -2,13 +2,8 @@
 import re
 import string
 import codecs
-import os
 import pickle
-import math
-import sqlite3
 import gzip
-import string
-import sys
 
 try:
     import ujson as json

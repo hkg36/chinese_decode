@@ -66,11 +66,56 @@ def ProcResult(result,errorinfo):
         print id
         weibo_l_u.update({'id':id},newdata)
 
+class UpdateUserWork(QueueClient.Task):
+    def __init__(self,uid):
+        QueueClient.Task.__init__(self)
+        self.uid=uid
+        self.request_headers={'function':'users__show','params':{"uid":str(self.uid)}}
+        self.step=0
+        self.result=None
+    def StepFinish(self,taskqueueclient):
+        if self.result_headers.get('zip'):
+                buf = StringIO(self.result_body)
+                f = gzip.GzipFile(fileobj=buf)
+                self.result_body = f.read()
+        print '---------uid %d step %d'%(self.uid,self.step)
+        if self.step==0:
+            if self.result_headers.get('error')==1:
+                if self.result_headers.get('httpcode',0)==400 and self.result_headers.get('weiboerror',0)==20003:
+                    self.result={'is_full_info':-1}
+                    self.AllFinish()
+                    return
+            self.result=json.loads(self.result_body)
+            if self.result.has_key('status'):
+                status=self.result.pop('status')
+            self.request_headers={'function':'tags','params':{'uid':str(self.uid),'count':200}}
+            taskqueueclient.AddTask(self)
+        elif self.step==1:
+            tags=json.loads(self.result_body)
+            self.result['tags']=tags
+            self.result["is_full_info"]=FullInfoVersion
+            self.result['full_info_time']=time.time()
+            self.request_headers={'function':'friendships__friends__ids','params':{'uid':str(self.uid),'count':5000}}
+            taskqueueclient.AddTask(self)
+        elif self.step==2:
+            friend_res=json.loads(self.result_body)
+            if 'ids' in friend_res:
+                ids=friend_res['ids']
+                self.result['friend_list']=ids
+            self.AllFinish()
+        self.step+=1
+    def AllFinish(self):
+        if self.result['is_full_info']==-1:
+            print self.uid,'NE'
+            weibo_l_u.update({'id':self.uid},{'$set':{'is_full_info':-1}})
+        else:
+            print self.uid
+            weibo_l_u.update({'id':self.uid},self.result)
 if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_u=con.weibousers.user
 
-    workpool=multithread.WorkManager(4,thread_init_fun=ThreadInit)
+    #workpool=multithread.WorkManager(4,thread_init_fun=ThreadInit)
     start_work_time=time.time()
     while True:
         users=[]
@@ -86,8 +131,16 @@ if __name__ == '__main__':
         if len(users)==0:
             time.sleep(60*60)
             continue
-
-        for data in users:
+        try:
+            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            for data in users:
+                task=UpdateUserWork(data['id'])
+                taskqueue.AddTask(task)
+            taskqueue.WaitResult()
+            taskqueue.Close()
+        except Exception,e:
+            print e
+    """     for data in users:
             workpool.add_job(ProcWork,data,ProcResult)
         workpool.wait_allworkcomplete()
-    workpool.wait_allthreadcomplete()
+    workpool.wait_allthreadcomplete()"""

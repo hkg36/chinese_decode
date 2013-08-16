@@ -152,9 +152,8 @@ if __name__ == '__main__':
     db.commit()
     db.close()
 
-    #weibo_tools.UseRandomLocalAddress()
-    #con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
-    #con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
+    con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
+    con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
 
     work_manage=multithread.WorkManager(3,InitFun)
 
@@ -165,11 +164,11 @@ if __name__ == '__main__':
         if res is None:
             return
         pos,weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
-        #for data in weiboslist:
-            #con.weibolist.weibo.insert(data)
-            #con_bk.weibolist.weibo.insert(data)
-        #for data in userslist:
-            #con.weibousers.user.insert(data)
+        for data in weiboslist:
+            con.weibolist.weibo.insert(data)
+            con_bk.weibolist.weibo.insert(data)
+        for data in userslist:
+            con.weibousers.user.insert(data)
 
         if has_req_error==False:
             if total_number>0:
