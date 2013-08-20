@@ -4,6 +4,9 @@ from cStringIO import StringIO
 import uuid,time
 import pika
 import logging
+from xml.etree import cElementTree as ElementTree
+import html5lib
+
 logging.getLogger('pika').setLevel(logging.ERROR)
 class QueueClient(object):
     def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True):
@@ -17,6 +20,7 @@ class QueueClient(object):
         self.task_count=0
         self.last_result_headers=None
         self.last_result_body=None
+        self.last_response_time=time.time()
         self.Connect()
     def Connect(self):
         cred = pika.PlainCredentials(self.usr,self.psw)
@@ -37,6 +41,7 @@ class QueueClient(object):
         if ch is None or method is None or props is None or body is None:
             print "empty callback"
             return
+        self.last_response_time=time.time()
         self.last_result_headers=props.headers
         self.last_result_body=body
         self.task_count-=1
@@ -81,6 +86,7 @@ class TaskQueueClient(QueueClient):
         if ch is None or method is None or props is None or body is None:
             print "empty callback"
             return
+        self.last_response_time=time.time()
         self.last_result_headers=props.headers
         self.last_result_body=body
         self.task_count-=1
@@ -90,6 +96,8 @@ class TaskQueueClient(QueueClient):
                 task.result_headers=props.headers
                 task.result_body=body
                 task.StepFinish(self)
+                self.last_result_headers=task.result_headers
+                self.last_result_body=task.result_body
             except Exception,e:
                 print e
     def WaitResult(self):
@@ -97,18 +105,20 @@ class TaskQueueClient(QueueClient):
             self.connection.process_data_events()
 
             nowtime=time.time()
-            for uuid in self.tasklist:
-                task=self.tasklist[uuid]
-                if nowtime-task.add_time>300:
-                    self.tasklist.pop(uuid)
+            if nowtime-self.last_response_time>300:
+                for uuid in self.tasklist.keys():
+                    task=self.tasklist[uuid]
+                    if nowtime-task.add_time>600:
+                        self.tasklist.pop(uuid)
         return self.last_result_headers,self.last_result_body
 class HttpQueueClient(QueueClient):
+    htmlparser = html5lib.HTMLParser(tree=html5lib.treebuilders.getTreeBuilder("etree",ElementTree),namespaceHTMLElements=False)
     def ProcessResult(self,headers,body):
+        stream = StringIO(body)
         if headers.get('zip'):
-            buf = StringIO(body)
-            f = gzip.GzipFile(fileobj=buf)
-            body = f.read()
-        print body
+            stream = gzip.GzipFile(fileobj=stream)
+        htmlfile = self.htmlparser.parse(stream)
+        print htmlfile
 class WeiboQueueClient(QueueClient):
     def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True):
         QueueClient.__init__(self,host,port,virtual_host,usr,psw,queue_name,needresult)
@@ -140,6 +150,7 @@ if __name__ == '__main__':
     Queue_Port=None
     Queue_Path='/spider'
 
+    """
     class HttpTask(Task):
         def StepFinish(self,taskqueueclient):
             if self.result_headers.get('zip'):
@@ -154,7 +165,7 @@ if __name__ == '__main__':
     client.AddTask(task)
     client.WaitResult()
     client.Close()
-    exit(0)
+    exit(0)"""
 
     client=HttpQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'net_request',True)
     client.AddTask({'url':'https://www.google.com.hk'})
