@@ -1,5 +1,4 @@
 #-*-coding:utf-8-*-
-import weibo_tools
 import codecs
 import weibo_bot
 import decoder
@@ -11,6 +10,8 @@ import env_data
 import mongo_autoreconnect
 import tools
 import sys
+import QueueClient
+import json
 
 word_dict_root=None
 grouptree=None
@@ -42,6 +43,12 @@ def lineproc(id,text):
     grouptree.ProcessOneLine(words)
     return grouptree.group_count
 
+Queue_User='spider'
+Queue_PassWord='spider'
+Queue_Server='124.207.209.57'
+Queue_Port=None
+Queue_Path='/spider'
+
 if __name__ == '__main__':
     test_mod=False
     if len(sys.argv)>=2:
@@ -68,7 +75,6 @@ if __name__ == '__main__':
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
     pool=multiprocessing.Pool(processes=2,initializer=proc_init)
-    weibo_tools.UseRandomLocalAddress()
     for run_time_count in xrange(1000):
         try:
             if test_mod==False:
@@ -95,22 +101,23 @@ if __name__ == '__main__':
         wordgroup_allcount={}
         wordgroup_replycount={}
 
-        client=weibo_tools.DefaultWeiboClient()
+        client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
         textlist={}
         proced_ids=set()
         result_list=[]
         print "page read "
         for page in xrange(1,20):
-            for i in xrange(10):
-                try:
-                    res=client.statuses__user_timeline(uid=weibo_uid,count=100,page=page)
-                    break
-                except Exception,e:
-                    res=None
-                    print e
-            print '%d,'%page,
-            if res:
-                status=res.get('statuses')
+            try:
+                client.AddTask({'function':'statuses__user_timeline','params':{'uid':str(weibo_uid),'count':100,'page':page}})
+                header,body=client.WaitResult()
+                body=json.loads(body)
+            except Exception,e:
+                print e
+                break
+
+            print 'read page %d'%page
+            if body:
+                status=body.get('statuses')
                 if status:
                     if len(status)==0:
                         break
@@ -130,6 +137,7 @@ if __name__ == '__main__':
         print ''
         for res1 in result_list:
             res1.wait()
+        client.Close()
 
         groupread=[]
         for wc in checkwords:
