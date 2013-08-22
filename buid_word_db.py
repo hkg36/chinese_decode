@@ -27,36 +27,6 @@ class WordTree:
             wc.word_ref=line_text
             self.word_loaded[line_text]=wc
             return wc
-    def LoadFinish(self):
-        for one in self.word_loaded:
-            self.word_all.append(one)
-        self.word_all.sort()
-
-        home_dir='/app_data/chinese_decode/dictdb'
-        if not os.path.isdir(home_dir):
-            os.makedirs(home_dir)
-        for f in os.listdir(home_dir):
-            f=os.path.join(home_dir,f)
-            if os.path.isfile(f):
-                os.remove(f)
-        self.dbenv = bsddb3.db.DBEnv()
-        self.dbenv.open(home_dir, decoder.db_env_flag)
-
-        self.db = bsddb3.db.DB(self.dbenv)
-        self.db.open('maindb.db','main',bsddb3.db.DB_BTREE,bsddb3.db.DB_CREATE, 0666)
-
-        for one in self.word_loaded:
-            wc=self.word_loaded[one]
-            info={'freq':wc.freq}
-            if wc.type:
-                info['type']=wc.type
-            if wc.weight:
-                info['weight']=wc.weight
-            if wc.wordgroup:
-                info['group']=wc.wordgroup
-            self.db.put(one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL))
-        self.db.close()
-        self.dbenv.close()
     def LoadFinish2(self):
         wordlist=[]
         for one in self.word_loaded:
@@ -72,6 +42,7 @@ class WordTree:
         return wordlist
     def LoadWordType(self):
         fp=gzip.open('data/dictbase/word_pos.txt.gz')
+        print 'data/dictbase/word_pos.txt.gz loaded'
         word_pos=json.load(fp)
         fp.close()
         for word in word_pos:
@@ -85,6 +56,7 @@ class WordTree:
     def LoadWordFreqFile(self):
         try:
             fp=gzip.open("data/dictbase/word_freq.txt.gz")
+            print "data/dictbase/word_freq.txt.gz loaded"
             word_freq_list=json.load(fp)
             fp.close()
         except Exception,e:
@@ -103,6 +75,7 @@ class WordTree:
                 addedCell.weight=math.log(freq,math.e)
     def LoadHudongbaikeWords(self):
         fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz','r')
+        print '../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz loaded'
         word_group=json.load(fp)
         fp.close()
         for word in word_group:
@@ -120,6 +93,7 @@ class WordTree:
         fp.close()"""
     def LoadXinHuaZhiDian(self):
         db=sqlite3.connect('../fetch_hudongbaike/data/xinhuazhidian.db')
+        print '../fetch_hudongbaike/data/xinhuazhidian.db loaded'
         dc=db.cursor()
         dc.execute('select distinct(word) from words')
         for word, in dc:
@@ -129,6 +103,7 @@ class WordTree:
 def BuildDefaultWordDic():
     word_dict_root=WordTree()
     fp=codecs.open('dict/word3.txt','r','utf8')## 来自国家语言委员会
+    print 'dict/word3.txt loaded'
     all_line=fp.readlines()
     fp.close()
     word_dict_root.BuildFindTree(all_line)
