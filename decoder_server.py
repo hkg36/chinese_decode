@@ -23,7 +23,7 @@ class ChineseSplitWork(QueueWorker.QueueWorker):
     def RequestWork(self,params,body):
         if params.get('zip'):
             body=gzip.GzipFile(fileobj=StringIO(body),mode='r').read()
-        if 'encode' in params:
+        if isinstance(body,unicode)==False and 'encode' in params:
             body=body.decode(params['encode'])
 
         text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",body)
@@ -47,7 +47,6 @@ class ChineseSplitWork(QueueWorker.QueueWorker):
                     groups=word.info.get('group')
                     if groups:
                         groupstr=','.join(groups)"""
-            print u">>%s %s"%(word.word,word.word_type_list)
             word_list=[]
             for word in words:
                 word_list.append({'pos':word.pos,'txt':word.word,'type':word.word_type_list,'nocn':word.is_no_cn})

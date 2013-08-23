@@ -144,12 +144,31 @@ class WeiboQueueClient(QueueClient):
             body = f.read()
         self.last_result_body=body
 if __name__ == '__main__':
+    import json
     Queue_User='spider'
     Queue_PassWord='spider'
     Queue_Server='124.207.209.57'
     Queue_Port=None
     Queue_Path='/spider'
 
+    client=QueueClient(Queue_Server,Queue_Port,'/tools','guest','guest','chinese_split')
+    file=open('testdata.txt')
+    testbody=file.read()
+    file.close()
+    stream=StringIO()
+    gs=gzip.GzipFile(fileobj=stream,mode='w')
+    gs.write(testbody)
+    gs.close()
+    client.AddTask({'zip':True,'encode':'utf8'},stream.getvalue())
+    head,body=client.WaitResult()
+    print body
+    body=StringIO(body)
+    if head.get('zip'):
+        body=gzip.GzipFile(fileobj=body)
+    body=json.load(body)
+    print json.dumps(body,ensure_ascii=False)
+    client.Close()
+    exit()
     """
     class HttpTask(Task):
         def StepFinish(self,taskqueueclient):

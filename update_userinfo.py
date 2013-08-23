@@ -115,8 +115,11 @@ if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_u=con.weibousers.user
 
-    #workpool=multithread.WorkManager(4,thread_init_fun=ThreadInit)
-    start_work_time=time.time()
+    """taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+    task=UpdateUserWork(1272078575)
+    taskqueue.AddTask(task)
+    taskqueue.WaitResult()
+    taskqueue.Close()"""
     while True:
         users=[]
         with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
@@ -140,7 +143,3 @@ if __name__ == '__main__':
             taskqueue.Close()
         except Exception,e:
             print e
-    """     for data in users:
-            workpool.add_job(ProcWork,data,ProcResult)
-        workpool.wait_allworkcomplete()
-    workpool.wait_allthreadcomplete()"""
