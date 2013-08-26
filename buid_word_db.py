@@ -1,11 +1,10 @@
 #-*-coding:utf-8-*-
-import decoder
 from decoder import WordCell
-import codecs,os,bsddb3
+import codecs
 import pickle
 import json,gzip
 import math,sqlite3
-import worddict,worddict2
+import worddict2
 
 class WordTree:
     word_all=[]
