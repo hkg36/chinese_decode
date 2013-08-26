@@ -40,6 +40,9 @@ class QueueWorker(object):
             except Exception,e:
                 replybody = traceback.format_exc()
                 replyheader={'error':str(e)}
+        else:
+            replyheader={'error':'no head'}
+            replybody='unknow'
         if properties.reply_to:
             properties_res=pika.BasicProperties(delivery_mode = 2,headers=replyheader,correlation_id=properties.correlation_id)
             try:

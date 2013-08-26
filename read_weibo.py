@@ -5,11 +5,17 @@ import time
 import traceback
 from STTrans import STTrans
 import mongo_autoreconnect
+import QueueClient
+import json
 
 word_base_db_file="/app_data/chinese_decode/weibo_word_base.db"
 def RepairDb(client,db):
     try:
-        res=client.friendships__friends__ids(uid=client.user_id)
+        client.AddTask({'function':'friendships__friends__ids','params':
+                {'uid':str(client.user_id)}})
+        headers,body=client.WaitResult()
+        res=json.loads(body)
+
         ids=res.get('ids')
         db.execute('create table if not exists follow_ids(user_id int not null PRIMARY KEY)')
         db.execute('delete from follow_ids')
@@ -39,7 +45,10 @@ def ReadUserWeibo(client):
     all_time_line_statuses=[]
     try:
         for page in xrange(1,10):
-            public_time_line=client.statuses__home_timeline(page=page,since_id=since_id,count=200,filter_by_author=1,trim_user=1)
+            client.AddTask({'function':'statuses__home_timeline','params':
+                {'page':page,'since_id':str(since_id),'count':200,'filter_by_author':1,'trim_user':1}})
+            headers,body=client.WaitResult()
+            public_time_line=json.loads(body)
             if public_time_line.has_key('statuses'):
                 statuses=public_time_line['statuses']
                 if len(statuses)>0:
@@ -79,7 +88,10 @@ def CheckComment(client,dbc,weibo_id,last_comment_id=0):
     count=0
     total_number=0
     for page in xrange(1,100):
-        weibores=client.comments__show(id=weibo_id,since_id=last_comment_id,count=200,trim_user=1,page=page)
+        client.AddTask({'function':'comments__show','params':
+                {'id':str(weibo_id),'since_id':str(last_comment_id),'count':200,'trim_user':1,'page':page}})
+        headers,body=client.WaitResult()
+        weibores=json.loads(body)
         comments=weibores.get('comments')
         total_number=weibores.get('total_number',0)
         if comments is None or len(comments)==0:
@@ -124,7 +136,12 @@ def RecheckComment(client):
     db.commit()
 
 if __name__ == '__main__':
-    weibo_tools.UseRandomLocalAddress()
+    Queue_User='spider'
+    Queue_PassWord='spider'
+    Queue_Server='124.207.209.57'
+    Queue_Port=None
+    Queue_Path='/spider'
+
     db=sqlite3.connect(word_base_db_file)
     try:
         db.execute("create table weibo_commentlast(weibo_id int not null PRIMARY KEY,last_comment_id int not null,CreatedTime TimeStamp NOT NULL DEFAULT CURRENT_TIMESTAMP,checktime int default 0)")
@@ -155,10 +172,27 @@ if __name__ == '__main__':
         CALLBACK_URL = 'http://1.livep.sinaapp.com/api/weibo_manager_impl/sina_weibo/callback.php'
         user_name = '990631337@qq.com'
         user_psw = 'mnbvcxz'
-        client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+
+
         try:
+            w_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
+            client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            client.SetWeiboConfig(APP_KEY,APP_SECRET,w_client.access_token)
+
+            client.AddTask({'function':'account__get_uid'})
+            header,body=client.WaitResult()
+            body=json.loads(body)
+            uid=body['uid']
+            client.user_id=uid
+            """client.AddTask({'function':'users__show','params':
+                {'uid':str(uid)}})
+            header,body=client.WaitResult()
+            body=json.loads(body)
+            print body['screen_name']"""
+
             ReadUserWeibo(client)
             RecheckComment(client)
+            client.Close()
         except Exception,e:
             print e
         print 'go sleep'
