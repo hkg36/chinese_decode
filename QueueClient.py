@@ -6,7 +6,7 @@ import pika
 import logging
 from xml.etree import cElementTree as ElementTree
 import html5lib
-
+import traceback
 logging.getLogger('pika').setLevel(logging.ERROR)
 class QueueClient(object):
     def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True):
@@ -31,6 +31,7 @@ class QueueClient(object):
                                                                        heartbeat_interval=20))
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=self.queue_name,durable=True)
+        self.task_count=0
         if self.needresult:
             result = self.channel.queue_declare(exclusive=True)
             self.callback_queue = result.method.queue
@@ -56,9 +57,11 @@ class QueueClient(object):
         self.task_count+=1
         self.channel.basic_publish(exchange='',routing_key=self.queue_name,body=body,properties=properties)
     def WaitResult(self):
-        while self.task_count:
+        while self.task_count and time.time()-self.last_response_time<120:
             self.connection.process_data_events()
-        return self.last_result_headers,self.last_result_body
+        tmp1,tmp2=self.last_result_headers,self.last_result_body
+        self.last_result_headers,self.last_result_body=None,None
+        return tmp1,tmp2
     def Close(self):
         self.channel.close()
         self.connection.close()
@@ -78,7 +81,6 @@ class TaskQueueClient(QueueClient):
         task.add_time=time.time()
         properties=pika.BasicProperties(delivery_mode = 2,headers=task.request_headers,reply_to = self.callback_queue,
                                         correlation_id=task.uuid)
-        self.task_count+=1
         self.channel.basic_publish(exchange='',routing_key=self.queue_name,body=task.request_body,properties=properties)
     def RemoveTask(self,task):
         self.tasklist.pop(task.uuid)
@@ -89,7 +91,6 @@ class TaskQueueClient(QueueClient):
         self.last_response_time=time.time()
         self.last_result_headers=props.headers
         self.last_result_body=body
-        self.task_count-=1
         task=self.tasklist.pop(props.correlation_id)
         if task:
             try:
@@ -99,9 +100,9 @@ class TaskQueueClient(QueueClient):
                 self.last_result_headers=task.result_headers
                 self.last_result_body=task.result_body
             except Exception,e:
-                print e
+                print traceback.format_exc()
     def WaitResult(self):
-        while self.task_count:
+        while self.tasklist:
             self.connection.process_data_events()
 
             nowtime=time.time()
@@ -110,7 +111,9 @@ class TaskQueueClient(QueueClient):
                     task=self.tasklist[uuid]
                     if nowtime-task.add_time>600:
                         self.tasklist.pop(uuid)
-        return self.last_result_headers,self.last_result_body
+        tmp1,tmp2=self.last_result_headers,self.last_result_body
+        self.last_result_headers,self.last_result_body=None,None
+        return tmp1,tmp2
 class HttpQueueClient(QueueClient):
     htmlparser = html5lib.HTMLParser(tree=html5lib.treebuilders.getTreeBuilder("etree",ElementTree),namespaceHTMLElements=False)
     def ProcessResult(self,headers,body):

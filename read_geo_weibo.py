@@ -13,6 +13,8 @@ import mongo_autoreconnect
 import codecs
 import multithread
 import json
+from cStringIO import StringIO
+import gzip
 
 def SplitWeiboInfo(line):
     if not 'user' in line:
@@ -63,54 +65,55 @@ Queue_Server='124.207.209.57'
 Queue_Port=None
 Queue_Path='/spider'
 
-def InitFun(arg):
-    return None
-
-def FetchPosInfo(client,pos):
-    last_weibo_id=pos['last_weibo_id']
-    readtime=time.time()
-    total_number=0
-    max_id=0
-    has_req_error=False
-    page=1
-    client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
-    userslist={}
-    weiboslist={}
-    while page <= 50:
-        try:
-            client.AddTask({'function':'place__nearby_timeline','params':{"lat":str(pos['lat']),"long":str(pos['lng']),"range":11000,"count":50,"page":page,"offset":1}})
-            headers,body=client.WaitResult()
-            place_res=json.loads(body)
-            #place_res=client.place__nearby_timeline(lat= pos['lat'],long=pos['lng'],range=11000,count=50,page=page,offset=1)
-            print 'read_page',page
-            page+=1
-        except Exception,e:
-            print e,body
-            break
-
+class ReadGeoTask(QueueClient.Task):
+    def StartPrepare(self,taskinfo):
+        self.taskinfo=taskinfo
+        self.last_weibo_id=self.taskinfo['last_weibo_id']
+        self.readtime=time.time()
+        self.total_number=0
+        self.max_id=0
+        self.page=1
+        self.userslist={}
+        self.weiboslist={}
+        self.PrepareFunction('place__nearby_timeline',lat=self.taskinfo['lat'],long=self.taskinfo['lng'],range=11000,count=50,page=self.page,offset=1)
+    def PrepareFunction(self,function,**params):
+        atl_params={}
+        for key in params:
+            atl_params[key]=str(params[key])
+        self.request_headers={'function':function,'params':atl_params}
+        self.request_body=''
+    def StepFinish(self,taskqueueclient):
+        if self.result_headers.get('zip'):
+                buf = StringIO(self.result_body)
+                f = gzip.GzipFile(fileobj=buf)
+                self.result_body = f.read()
+        place_res=json.loads(self.result_body)
         if len(place_res)==0:
-            break
+            self.Finish()
+            return
         #print json.dumps(place_res)
         if 'statuses' not in place_res:
             print place_res
-            break
+            self.Finish()
+            return
         statuses=place_res['statuses']
         if len(statuses)==0:
-            break
-
+            self.Finish()
+            return
+        print "%d read page %d"%(self.taskinfo['id'],self.page)
         not_go_next_page=False
         for line in statuses:
             line_info=SplitWeiboInfo(line)
             if line_info==None:
                 continue
             data,user=line_info
-            max_id=max(max_id,data["weibo_id"])
-            if data["weibo_id"]<last_weibo_id:
+            self.max_id=max(self.max_id,data["weibo_id"])
+            if data["weibo_id"]<self.last_weibo_id:
                 not_go_next_page=True
             else:
-                total_number+=1
-            weiboslist[data['weibo_id']]=data
-            userslist[user['id']]=user
+                self.total_number+=1
+            self.weiboslist[data['weibo_id']]=data
+            self.userslist[user['id']]=user
 
             retweeted_status=line.get('retweeted_status')
             if retweeted_status==None:
@@ -119,15 +122,30 @@ def FetchPosInfo(client,pos):
             if line_info==None:
                 continue
             data,user=line_info
-            weiboslist[data['weibo_id']]=data
-            userslist[user['id']]=user
+            self.weiboslist[data['weibo_id']]=data
+            self.userslist[user['id']]=user
 
-        if not_go_next_page:
-            break
-    print 'id:%d linecount:%d'%(pos['id'],total_number)
-    client.Close()
-    return (pos,weiboslist.values(),userslist.values(),has_req_error,total_number,readtime,max_id)
+        if not_go_next_page or self.page==20:
+            self.Finish()
+        else:
+            self.page+=1
+            self.PrepareFunction('place__nearby_timeline',lat=self.taskinfo['lat'],long=self.taskinfo['lng'],range=11000,count=50,page=self.page,offset=1)
+            taskqueueclient.AddTask(self)
+    def Finish(self):
+        print 'id:%d linecount:%d'%(self.taskinfo['id'],self.total_number)
+        for data in self.weiboslist.values():
+            con.weibolist.weibo.insert(data)
+            con_bk.weibolist.weibo.insert(data)
+        for data in self.userslist.values():
+            con.weibousers.user.insert(data)
 
+        if self.total_number>0:
+            pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkweiboid=?,last_checkspan=? where id=?',
+                (self.readtime,self.total_number,self.max_id,self.readtime-self.taskinfo['last_checktime'],self.taskinfo['id']))
+        else:
+            pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
+                (self.readtime,self.total_number,self.readtime-self.taskinfo['last_checktime'],self.taskinfo['id']))
+        pos_db.commit()
 if __name__ == '__main__':
     #ss=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(1348447055)))
     if not os.path.exists("GeoData"):
@@ -155,39 +173,10 @@ if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     con_bk=pymongo.Connection(env_data.mongo_connect_str_backup)
 
-    work_manage=multithread.WorkManager(3,InitFun)
-
-    def FetchInfoFinish(res,error):
-        if error is not None:
-            print str(error)
-            return
-        if res is None:
-            return
-        pos,weiboslist,userslist,has_req_error,total_number,readtime,max_id=res
-        for data in weiboslist:
-            con.weibolist.weibo.insert(data)
-            con_bk.weibolist.weibo.insert(data)
-        for data in userslist:
-            con.weibousers.user.insert(data)
-
-        if has_req_error==False:
-            if total_number>0:
-                pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkweiboid=?,last_checkspan=? where id=?',
-                    (readtime,total_number,max_id,readtime-pos['last_checktime'],pos['id']))
-            else:
-                pos_db.execute('update GeoWeiboPoint set last_checktime=?,last_checkcount=?,last_checkspan=? where id=?',
-                    (readtime,total_number,readtime-pos['last_checktime'],pos['id']))
-            pos_db.commit()
-
     start_work_time=time.time()
     run_start_time=0
     while True:
-        """if time.time()-start_work_time>60*60:
-            print 'self kill'
-            break"""
-
         run_start_time=time.time()
-
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
         pos_to_record=[]
         pos_cursor=pos_db.cursor()
@@ -217,7 +206,16 @@ if __name__ == '__main__':
             time.sleep(20)
             continue
 
-        for pos in pos_to_record:
-            work_manage.add_job(FetchPosInfo,pos,FetchInfoFinish)
-        work_manage.wait_allworkcomplete()
-    work_manage.wait_allthreadcomplete()
+        try:
+            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            PAGE_ONE_COUNT=3
+            for i in range(0,len(pos_to_record),PAGE_ONE_COUNT):
+                b=pos_to_record[i:i+PAGE_ONE_COUNT]
+                for pos_t in b:
+                    task=ReadGeoTask()
+                    task.StartPrepare(pos_t)
+                    taskqueue.AddTask(task)
+                taskqueue.WaitResult()
+            taskqueue.Close()
+        except Exception,e:
+            print e
