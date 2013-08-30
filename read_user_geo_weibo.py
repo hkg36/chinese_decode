@@ -79,7 +79,6 @@ class UserWeiboWork(QueueClient.Task):
 
         for data in weiboslist:
             weibo_l_w.insert(data)
-            con_bak.weibolist.weibo.insert(data)
         for data in userslist:
             weibo_l_u.insert(data)
 
@@ -90,8 +89,6 @@ class UserWeiboWork(QueueClient.Task):
             weibo_l_u.update({'id':self.uid},{'$set':{'last_geo_check':self.start_check_time}})
             print '%d fail from (%d)'%(self.uid,self.last_geo_check_id)
 if __name__ == '__main__':
-    con_bak=pymongo.Connection(env_data.mongo_connect_str_backup,read_preference=pymongo.ReadPreference.PRIMARY)
-
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_w=con.weibolist.weibo
     weibo_l_u=con.weibousers.user

@@ -1,6 +1,6 @@
 #-*-coding:utf-8-*-
 import decoder
-import QueueWorker
+import QueueWorker2
 import gzip
 from cStringIO import StringIO
 import json
@@ -12,7 +12,7 @@ Queue_Server='124.207.209.57'
 Queue_Port=None
 Queue_Path='/tools'
 
-class ChineseSplitWork(QueueWorker.QueueWorker):
+class ChineseSplitWork(QueueWorker2.QueueWorker):
     def Prepare(self):
         self.word_dict_root=decoder.LoadDefaultWordDic()
         self.signwordpos=decoder.SignWordPos()

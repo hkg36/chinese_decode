@@ -2,12 +2,12 @@
 import gzip
 from cStringIO import StringIO
 import uuid,time
-import pika
-import logging
+from kombu import Connection
+from kombu.messaging import Consumer,Producer
+from kombu import Exchange, Queue
 from xml.etree import cElementTree as ElementTree
 import html5lib
 import traceback
-logging.getLogger('pika').setLevel(logging.ERROR)
 class QueueClient(object):
     def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True):
         self.host=host
@@ -23,42 +23,41 @@ class QueueClient(object):
         self.last_response_time=time.time()
         self.Connect()
     def Connect(self):
-        cred = pika.PlainCredentials(self.usr,self.psw)
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host,
-                                                                       port=self.port,
-                                                                       virtual_host=self.virtual_host,
-                                                                       credentials=cred,
-                                                                       heartbeat_interval=20))
+        self.connection = Connection(hostname=self.host,port=self.port,userid=self.usr,password=self.psw,virtual_host=self.virtual_host)
         self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=self.queue_name,durable=True)
+        self.producer=Producer(self.channel)
         self.task_count=0
         if self.needresult:
-            result = self.channel.queue_declare(exclusive=True)
-            self.callback_queue = result.method.queue
-            self.channel.basic_consume(self.on_response,no_ack=True,queue=self.callback_queue)
+            back_queue = Queue(exclusive=True,durable=False)
+            self.consumer = Consumer(self.channel,back_queue,no_ack=True)
+            self.consumer.qos(prefetch_count=1)
+            self.consumer.register_callback(self.on_response)
+            self.callback_queue=self.consumer.queues[0].name
+            self.consumer.consume()
         else:
             self.callback_queue = None
-    def on_response(self,ch, method, props, body):
-        if ch is None or method is None or props is None or body is None:
-            print "empty callback"
-            return
+    def on_response(self,body, message):
+        properties=message.properties
+        headers=message.headers
+
         self.last_response_time=time.time()
-        self.last_result_headers=props.headers
+        self.last_result_headers=headers
         self.last_result_body=body
         self.task_count-=1
         try:
-            self.ProcessResult(props.headers,body)
+            self.ProcessResult(headers,body)
         except Exception,e:
             print e
     def ProcessResult(self,headers,body):
         pass
     def AddTask(self,header,body=''):
-        properties=pika.BasicProperties(delivery_mode = 2,headers=header,reply_to = self.callback_queue)
+        self.producer.publish(body=body,delivery_mode=2,headers=header,
+                                  routing_key=self.queue_name,
+                                  reply_to = self.callback_queue)
         self.task_count+=1
-        self.channel.basic_publish(exchange='',routing_key=self.queue_name,body=body,properties=properties)
     def WaitResult(self):
         while self.task_count and time.time()-self.last_response_time<120:
-            self.connection.process_data_events()
+            self.connection.drain_events()
         tmp1,tmp2=self.last_result_headers,self.last_result_body
         self.last_result_headers,self.last_result_body=None,None
         return tmp1,tmp2
@@ -79,22 +78,23 @@ class TaskQueueClient(QueueClient):
     def AddTask(self,task):
         self.tasklist[task.uuid]=task
         task.add_time=time.time()
-        properties=pika.BasicProperties(delivery_mode = 2,headers=task.request_headers,reply_to = self.callback_queue,
-                                        correlation_id=task.uuid)
-        self.channel.basic_publish(exchange='',routing_key=self.queue_name,body=task.request_body,properties=properties)
+        self.producer.publish(body=task.request_body,delivery_mode=2,headers=task.request_headers,
+                                  routing_key=self.queue_name,
+                                  reply_to = self.callback_queue,
+                                  correlation_id=task.uuid)
     def RemoveTask(self,task):
         self.tasklist.pop(task.uuid)
-    def on_response(self,ch, method, props, body):
-        if ch is None or method is None or props is None or body is None:
-            print "empty callback"
-            return
+    def on_response(self,body, message):
+        properties=message.properties
+        headers=message.headers
+
         self.last_response_time=time.time()
-        self.last_result_headers=props.headers
+        self.last_result_headers=headers
         self.last_result_body=body
-        task=self.tasklist.pop(props.correlation_id)
+        task=self.tasklist.pop(properties['correlation_id'])
         if task:
             try:
-                task.result_headers=props.headers
+                task.result_headers=headers
                 task.result_body=body
                 task.StepFinish(self)
                 self.last_result_headers=task.result_headers
@@ -103,7 +103,7 @@ class TaskQueueClient(QueueClient):
                 print traceback.format_exc()
     def WaitResult(self):
         while self.tasklist:
-            self.connection.process_data_events()
+            self.connection.drain_events()
 
             nowtime=time.time()
             if nowtime-self.last_response_time>300:

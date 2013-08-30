@@ -18,58 +18,11 @@ Queue_Path='/spider'
 
 FullInfoVersion=2
 
-def ThreadInit(args):
-    return None
-def ProcWork(client,data):
-    try:
-        client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
-        client.AddTask({'function':'users__show','params':{"uid":str(data['id'])}})
-        headers,body=client.WaitResult()
-        if headers.get('error')==1:
-            if headers.get('httpcode',0)==400 and headers.get('weiboerror',0)==20003:
-                client.Close()
-                return (data['id'],{'is_full_info':-1})
-        newdata=json.loads(body)
-
-        if newdata.has_key('status'):
-            status=newdata.pop('status')
-        client.AddTask({'function':'tags','params':{'uid':str(data['id']),'count':200}})
-        headers,body=client.WaitResult()
-        tags=json.loads(body)
-        newdata['tags']=tags
-        newdata["is_full_info"]=FullInfoVersion
-        newdata['full_info_time']=time.time()
-
-        client.AddTask({'function':'friendships__friends__ids','params':{'uid':str(data['id']),'count':5000}})
-        headers,body=client.WaitResult()
-        friend_res=json.loads(body)
-        if 'ids' in friend_res:
-            ids=friend_res['ids']
-            newdata['friend_list']=ids
-
-        client.Close()
-        return (data['id'],newdata)
-    except Exception,e:
-        print e
-
-def ProcResult(result,errorinfo):
-    if errorinfo is not None:
-        print str(errorinfo)
-        return
-    if result is None:
-        return
-    id,newdata=result
-    if newdata['is_full_info']==-1:
-        print id,'NE'
-        weibo_l_u.update({'id':id},{'$set':{'is_full_info':-1}})
-    else:
-        print id
-        weibo_l_u.update({'id':id},newdata)
-
 class UpdateUserWork(QueueClient.Task):
-    def __init__(self,uid):
+    def __init__(self,data):
         QueueClient.Task.__init__(self)
-        self.uid=uid
+        self.fulldata=data
+        self.uid=data['id']
         self.request_headers={'function':'users__show','params':{"uid":str(self.uid)}}
         self.step=0
         self.result=None
@@ -110,7 +63,8 @@ class UpdateUserWork(QueueClient.Task):
             weibo_l_u.update({'id':self.uid},{'$set':{'is_full_info':-1}})
         else:
             print self.uid
-            weibo_l_u.update({'id':self.uid},self.result)
+            self.fulldata.update(self.result)
+            weibo_l_u.update({'id':self.uid},self.fulldata)
 if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_u=con.weibousers.user
@@ -123,7 +77,7 @@ if __name__ == '__main__':
     while True:
         users=[]
         with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
-            ,{"is_full_info":{'$ne':-1}}]},{'id':1,'_id':0}).limit(50) as cur:
+            ,{"is_full_info":{'$ne':-1}}]},{'_id':0}).limit(50) as cur:
             for data in cur:
                 users.append(data)
         if len(users)==0:
@@ -137,7 +91,7 @@ if __name__ == '__main__':
         try:
             taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
             for data in users:
-                task=UpdateUserWork(data['id'])
+                task=UpdateUserWork(data)
                 taskqueue.AddTask(task)
             taskqueue.WaitResult()
             taskqueue.Close()
