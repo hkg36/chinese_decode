@@ -178,11 +178,12 @@ if __name__ == '__main__':
                 buf = StringIO(self.result_body)
                 f = gzip.GzipFile(fileobj=buf)
                 self.result_body = f.read()
+            print json.dumps(self.result_headers)
             print self.result_body
             #taskqueueclient.AddTask(self)
     client=TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'net_request',True)
     task=HttpTask()
-    task.request_headers={'url':'https://www.google.com.hk'}
+    task.request_headers={'url':'https://www.google.com.hk','cookie':'PREF=ID=ab9b8ecbd188f031:U=11a2711234e6a912:FF=0:LR=lang_zh-CN|lang_en:LD=en:NW=1:TM=1359995945:LM=1378102101:GM=1:SG=1:S=f3MPctNZidoPA5o-; NID=67=aapjHT4qLZqX71lYWJ8831notRrUxciIaNKNkUldb93FPglrYBY-lIp3zhRTpMUUYTofuihWIuXb211g7qfE95iI_34BGU77DPqzLc3_d3SG0Xye60V8XcoqwBotyLwpuVLRL5AdYXw6kjqDTdjibx14Kl4tx5bgRDixRg4kcuWMhiwSOIHCffK2wrl7OOoAdglkdwbOYVRgy5FOG9-mW2zx9rDsUEaziB4o-k5y1pkJuR5H9Q; SID=DQAAAHIBAACXlBI8CHaZgYBJraoKkX6_69oRqcQJkOZPF1ao2WYJFJOnhJdaEwHe8pTFTXtyRlrvGmy6Nld-z1G8BTIlZi1sXys4FDKTUk88Ix4Tz8MnPAQyKiFSs-0rk_mJMZfj83s-iM5n6DbqidIrBsUQ0PQulvIIj_X91ezvQDy-YbbZYubpD9JKbVvPOYKjdB78wYqmqQMxlUpWzRiAk0DBdVfvmQDb4jphiXFyTaFkjumk3h3F3c1gIDNYSK3TNvgrRWkYAYU9wNWQ0YYMHk7g_YV7mhPZrNPbv61QE6zOpfNnXiAV2-sIdww5b9XeB3I5hUWW4PsHzxlPxJk_BEo4rZfg1QrSOo-9aHDckS1jm-KHqe83INaF0z3P3JoxvBd0jM2DtCO0P-6SIlwvfHdjIZnO4sv0hbU41FLL06iQKABP6nBOZT7Wp4_Eg9-6qMDv179If0SIvMQ_BynEpU8INc6RrCR5pvx5eRy5G70-wPJ7Kk0z1-5aJTTA-EzTTlTV1iE; HSID=AsuaDeIcYavcT0170; SSID=A5NsYHCb0nQBHyutF; APISID=qEGwFS6SQ_VNwOzH/AixechYlfBHXSXFyL; SAPISID=2sxxYezVR6Z1QGWa/ALk1_bu0BQgIfngLh'}
     client.AddTask(task)
     client.WaitResult()
     client.Close()

@@ -12,6 +12,10 @@ except Exception,e:
 
 try:
     import worddict2 as worddict
+    ver=worddict.version()
+    if ver[1]<2:
+        print 'worddict version error %d.%d.%d'%ver
+        exit(0)
 except Exception,e:
     worddict=None
 
