@@ -33,7 +33,7 @@ class UpdateUserWork(QueueClient.Task):
                 self.result_body = f.read()
         print '---------uid %d step %d'%(self.uid,self.step)
         if self.step==0:
-            if self.result_headers.get('error')==1:
+            if self.result_headers.get('error',0)==1:
                 if self.result_headers.get('httpcode',0)==400 and self.result_headers.get('weiboerror',0)==20003:
                     self.result={'is_full_info':-1}
                     self.AllFinish()
@@ -44,17 +44,19 @@ class UpdateUserWork(QueueClient.Task):
             self.request_headers={'function':'tags','params':{'uid':str(self.uid),'count':200}}
             taskqueueclient.AddTask(self)
         elif self.step==1:
-            tags=json.loads(self.result_body)
-            self.result['tags']=tags
-            self.result["is_full_info"]=FullInfoVersion
-            self.result['full_info_time']=time.time()
+            if self.result_headers.get('error',0)==0:
+                tags=json.loads(self.result_body)
+                self.result['tags']=tags
             self.request_headers={'function':'friendships__friends__ids','params':{'uid':str(self.uid),'count':5000}}
             taskqueueclient.AddTask(self)
         elif self.step==2:
-            friend_res=json.loads(self.result_body)
-            if 'ids' in friend_res:
-                ids=friend_res['ids']
-                self.result['friend_list']=ids
+            if self.result_headers.get('error',0)==0:
+                friend_res=json.loads(self.result_body)
+                if 'ids' in friend_res:
+                    ids=friend_res['ids']
+                    self.result['friend_list']=ids
+            self.result["is_full_info"]=FullInfoVersion
+            self.result['full_info_time']=time.time()
             self.AllFinish()
         self.step+=1
     def AllFinish(self):

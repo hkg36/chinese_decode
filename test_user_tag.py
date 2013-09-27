@@ -147,9 +147,7 @@ if __name__ == '__main__':
         groupread.sort(lambda x,y:-cmp(x[1],y[1]))
         resgroup=groupread[0:100]
 
-        for line in resgroup:
-            print "%s=>%d"%(line[0],line[1]),
-        print ''
+        print "%d tags"%len(resgroup)
 
         if test_mod:
             break
