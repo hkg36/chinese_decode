@@ -207,7 +207,8 @@ if __name__ == '__main__':
             continue
 
         try:
-            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
+                                                  'weibo_request',True)
             PAGE_ONE_COUNT=3
             for i in range(0,len(pos_to_record),PAGE_ONE_COUNT):
                 b=pos_to_record[i:i+PAGE_ONE_COUNT]

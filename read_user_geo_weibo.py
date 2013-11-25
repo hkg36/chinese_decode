@@ -108,7 +108,8 @@ if __name__ == '__main__':
         cur.close()
 
         try:
-            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
+                                                  'weibo_request',True)
             for weibo_user in user_to_check:
                 task=UserWeiboWork(weibo_user['id'],weibo_user.get('last_geo_check_id',0))
                 taskqueue.AddTask(task)

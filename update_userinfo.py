@@ -71,11 +71,8 @@ if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
     weibo_l_u=con.weibousers.user
 
-    """taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
-    task=UpdateUserWork(1272078575)
-    taskqueue.AddTask(task)
-    taskqueue.WaitResult()
-    taskqueue.Close()"""
+    taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
+                                                  'weibo_request',True)
     while True:
         users=[]
         with weibo_l_u.find({'$and':[{"is_full_info":{'$lt':FullInfoVersion}}
@@ -91,11 +88,10 @@ if __name__ == '__main__':
             time.sleep(60*60)
             continue
         try:
-            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
             for data in users:
                 task=UpdateUserWork(data)
                 taskqueue.AddTask(task)
             taskqueue.WaitResult()
-            taskqueue.Close()
         except Exception,e:
             print e
+        taskqueue.Close()

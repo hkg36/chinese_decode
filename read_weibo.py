@@ -176,7 +176,8 @@ if __name__ == '__main__':
 
         try:
             w_client=weibo_tools.WeiboClient(APP_KEY,APP_SECRET,CALLBACK_URL,user_name,user_psw)
-            client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+            client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
+                                                'weibo_request',True)
             client.SetWeiboConfig(APP_KEY,APP_SECRET,w_client.access_token)
 
             client.AddTask({'function':'account__get_uid'})

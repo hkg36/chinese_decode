@@ -9,7 +9,7 @@ from xml.etree import cElementTree as ElementTree
 import html5lib
 import traceback
 class QueueClient(object):
-    def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True):
+    def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True,result_queuename=None):
         self.host=host
         self.port=port
         self.virtual_host=virtual_host
@@ -21,6 +21,7 @@ class QueueClient(object):
         self.last_result_headers=None
         self.last_result_body=None
         self.last_response_time=time.time()
+        self.result_queuename=result_queuename
         self.Connect()
     def Connect(self):
         self.connection = Connection(hostname=self.host,port=self.port,userid=self.usr,password=self.psw,virtual_host=self.virtual_host)
@@ -28,8 +29,8 @@ class QueueClient(object):
         self.producer=Producer(self.channel)
         self.task_count=0
         if self.needresult:
-            back_queue = Queue(exclusive=True,durable=False)
-            self.consumer = Consumer(self.channel,back_queue,no_ack=True)
+            self.back_queue = Queue(name=self.result_queuename,auto_delete=True,exclusive=True,durable=False)
+            self.consumer = Consumer(self.channel,self.back_queue,no_ack=True)
             self.consumer.qos(prefetch_count=1)
             self.consumer.register_callback(self.on_response)
             self.callback_queue=self.consumer.queues[0].name
@@ -57,7 +58,7 @@ class QueueClient(object):
         self.task_count+=1
     def WaitResult(self):
         while self.task_count and time.time()-self.last_response_time<120:
-            self.connection.drain_events()
+            self.connection.drain_events(timeout=10)
         tmp1,tmp2=self.last_result_headers,self.last_result_body
         self.last_result_headers,self.last_result_body=None,None
         return tmp1,tmp2
@@ -103,13 +104,13 @@ class TaskQueueClient(QueueClient):
                 print traceback.format_exc()
     def WaitResult(self):
         while self.tasklist:
-            self.connection.drain_events()
+            self.connection.drain_events(timeout=10)
 
             nowtime=time.time()
-            if nowtime-self.last_response_time>300:
+            if nowtime-self.last_response_time>30:
                 for uuid in self.tasklist.keys():
                     task=self.tasklist[uuid]
-                    if nowtime-task.add_time>600:
+                    if nowtime-task.add_time>60:
                         self.tasklist.pop(uuid)
         tmp1,tmp2=self.last_result_headers,self.last_result_body
         self.last_result_headers,self.last_result_body=None,None

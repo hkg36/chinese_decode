@@ -12,6 +12,7 @@ import tools
 import sys
 import QueueClient
 import json
+import uuid
 
 word_dict_root=None
 grouptree=None
@@ -75,6 +76,7 @@ if __name__ == '__main__':
             wordgroup_allcount[one]=wordgroup_allcount.get(one,0)+res[one]
 
     pool=multiprocessing.Pool(processes=2,initializer=proc_init)
+    result_queue_name="test_user_tag_result-"+str(uuid.uuid4())
     for run_time_count in xrange(1000):
         try:
             if test_mod==False:
@@ -101,7 +103,7 @@ if __name__ == '__main__':
         wordgroup_allcount={}
         wordgroup_replycount={}
 
-        client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
+        client=QueueClient.WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True,result_queue_name)
         textlist={}
         proced_ids=set()
         result_list=[]
