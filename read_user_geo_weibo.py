@@ -53,10 +53,10 @@ class UserWeiboWork(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
-            self.max_id=max(self.max_id,data["weibo_id"])
+            self.max_id=max(self.max_id,data["_id"])
             self.weibo_count+=1
 
-            self.weiboslist[data['weibo_id']]=data
+            self.weiboslist[data['_id']]=data
 
             retweeted_status=line.get('retweeted_status')
             if retweeted_status==None:
@@ -65,7 +65,7 @@ class UserWeiboWork(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
-            self.weiboslist[data['weibo_id']]=data
+            self.weiboslist[data['_id']]=data
             self.userslist[user['id']]=user
         if len(statuses)<50:
             self.Finish()
@@ -90,7 +90,7 @@ class UserWeiboWork(QueueClient.Task):
             print '%d fail from (%d)'%(self.uid,self.last_geo_check_id)
 if __name__ == '__main__':
     con=pymongo.Connection(env_data.mongo_connect_str,read_preference=pymongo.ReadPreference.PRIMARY)
-    weibo_l_w=con.weibolist.weibo
+    weibo_l_w=con.weibocontent.weibo
     weibo_l_u=con.weibousers.user
 
     start_work_time=time.time()

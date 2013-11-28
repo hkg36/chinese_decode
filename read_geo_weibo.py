@@ -39,24 +39,20 @@ def SplitWeiboInfo(line):
     c_time=datetime.strptime(created_at,"%a %b %d %H:%M:%S +0800 %Y")
     u_time=time.mktime(c_time.timetuple())
     u_time-=8*3600
-    data={"weibo_id":int(line['id']),"uid":int(uid),"pos":{"lat":float(lat),"lng":float(lng)},"time":int(u_time),"word":text}
+    data={"_id":int(line['id']),"uid":int(uid),"pos":[float(lng),float(lat)],"time":int(u_time),"word":text}
     if 'thumbnail_pic' in line:
-        data["thumbnail_pic"]=line['thumbnail_pic']
-    if "bmiddle_pic" in line:
-        data["bmiddle_pic"]=line['bmiddle_pic']
+        data["spic"]=line['thumbnail_pic']
+    if "mpic" in line:
+        data["bpic"]=line['bmiddle_pic']
     if "original_pic" in line:
-        data["original_pic"]=line['original_pic']
+        data["opic"]=line['original_pic']
     if source:
         data['source']=source
-        #con.weibolist.weibo.update({"weibo_id":data['weibo_id'],data,upsert=True)
-    #weiboslist[data['weibo_id']]=data
     data['rec_time']=time.time()
 
     user['is_full_info']=0
     user['time']=time.time()
     user['id']=int(user['id'])
-    #con.weibolist.user.insert(data)
-    #userslist[data['id']]=data
     return (data,user)
 
 Queue_User='spider'
@@ -107,12 +103,12 @@ class ReadGeoTask(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
-            self.max_id=max(self.max_id,data["weibo_id"])
-            if data["weibo_id"]<self.last_weibo_id:
+            self.max_id=max(self.max_id,data["_id"])
+            if data["_id"]<self.last_weibo_id:
                 not_go_next_page=True
             else:
                 self.total_number+=1
-            self.weiboslist[data['weibo_id']]=data
+            self.weiboslist[data['_id']]=data
             self.userslist[user['id']]=user
 
             retweeted_status=line.get('retweeted_status')
@@ -122,7 +118,7 @@ class ReadGeoTask(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
-            self.weiboslist[data['weibo_id']]=data
+            self.weiboslist[data['_id']]=data
             self.userslist[user['id']]=user
 
         if not_go_next_page or self.page==20:
@@ -134,8 +130,8 @@ class ReadGeoTask(QueueClient.Task):
     def Finish(self):
         print 'id:%d linecount:%d'%(self.taskinfo['id'],self.total_number)
         for data in self.weiboslist.values():
-            con.weibolist.weibo.insert(data)
-            con_bk.weibolist.weibo.insert(data)
+            con.weibocontent.weibo.insert(data)
+            con_bk.weibocontent.weibo.insert(data)
         for data in self.userslist.values():
             con.weibousers.user.insert(data)
 
