@@ -22,9 +22,11 @@ class QueueClient(object):
         self.last_result_body=None
         self.last_response_time=time.time()
         self.result_queuename=result_queuename
+        self.consumer=None
         self.Connect()
     def Connect(self):
-        self.connection = Connection(hostname=self.host,port=self.port,userid=self.usr,password=self.psw,virtual_host=self.virtual_host)
+        self.connection = Connection(hostname=self.host,port=self.port,userid=self.usr,password=self.psw,virtual_host=self.virtual_host,
+                                     transport='kombu.transport.pyamqp:Transport',heartbeat=10)
         self.channel = self.connection.channel()
         self.producer=Producer(self.channel)
         self.task_count=0
@@ -57,12 +59,18 @@ class QueueClient(object):
                                   reply_to = self.callback_queue)
         self.task_count+=1
     def WaitResult(self):
-        while self.task_count and time.time()-self.last_response_time<120:
+        while self.task_count:
+            if time.time()-self.last_response_time>120:
+                self.task_count=0
+                break
             self.connection.drain_events(timeout=10)
+            self.connection.heartbeat_check(2)
         tmp1,tmp2=self.last_result_headers,self.last_result_body
         self.last_result_headers,self.last_result_body=None,None
         return tmp1,tmp2
     def Close(self):
+        if self.consumer:
+            self.consumer.close()
         self.channel.close()
         self.connection.close()
 class Task(object):
@@ -105,7 +113,7 @@ class TaskQueueClient(QueueClient):
     def WaitResult(self):
         while self.tasklist:
             self.connection.drain_events(timeout=10)
-
+            self.connection.heartbeat_check(2)
             nowtime=time.time()
             if nowtime-self.last_response_time>30:
                 for uuid in self.tasklist.keys():

@@ -138,7 +138,7 @@ def RecheckComment(client):
 if __name__ == '__main__':
     Queue_User='spider'
     Queue_PassWord='spider'
-    Queue_Server='124.207.209.57'
+    Queue_Server='127.0.0.1'
     Queue_Port=None
     Queue_Path='/spider'
 

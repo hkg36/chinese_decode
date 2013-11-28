@@ -61,7 +61,7 @@ def SplitWeiboInfo(line):
 
 Queue_User='spider'
 Queue_PassWord='spider'
-Queue_Server='124.207.209.57'
+Queue_Server='127.0.0.1'
 Queue_Port=None
 Queue_Path='/spider'
 
@@ -175,6 +175,7 @@ if __name__ == '__main__':
 
     start_work_time=time.time()
     run_start_time=0
+    taskqueue=None
     while True:
         run_start_time=time.time()
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -202,12 +203,16 @@ if __name__ == '__main__':
         pos_cursor.close()
 
         if len(pos_to_record)==0:
+            if taskqueue:
+                taskqueue.Close()
+                taskqueue=None
             print 'sleep for not thing to update'
             time.sleep(20)
             continue
 
         try:
-            taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
+            if taskqueue is None:
+                taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
                                                   'weibo_request',True)
             PAGE_ONE_COUNT=3
             for i in range(0,len(pos_to_record),PAGE_ONE_COUNT):
@@ -217,6 +222,6 @@ if __name__ == '__main__':
                     task.StartPrepare(pos_t)
                     taskqueue.AddTask(task)
                 taskqueue.WaitResult()
-            taskqueue.Close()
         except Exception,e:
+            taskqueue=None
             print e
