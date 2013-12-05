@@ -14,6 +14,7 @@ Queue_PassWord='spider'
 Queue_Server='124.207.209.57'
 Queue_Port=None
 Queue_Path='/spider'
+from kombu import Exchange,Producer
 
 class UserWeiboWork(QueueClient.Task):
     def __init__(self,uid,last_geo_check_id):
@@ -53,6 +54,7 @@ class UserWeiboWork(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
+            publish_exchange.publish(json.dumps(data,ensure_ascii=False))
             self.max_id=max(self.max_id,data["_id"])
             self.weibo_count+=1
 
@@ -65,6 +67,7 @@ class UserWeiboWork(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
+            publish_exchange.publish(json.dumps(data,ensure_ascii=False))
             self.weiboslist[data['_id']]=data
             self.userslist[user['id']]=user
         if len(statuses)<50:
@@ -110,6 +113,9 @@ if __name__ == '__main__':
         try:
             taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
                                                   'weibo_request',True)
+            exch=Exchange('weibodownload',type='topic',channel=taskqueue.channel,durable=True,delivery_mode=2)
+            publish_exchange = Producer(taskqueue.channel,exch,routing_key='weibo.user_geo')
+
             for weibo_user in user_to_check:
                 task=UserWeiboWork(weibo_user['id'],weibo_user.get('last_geo_check_id',0))
                 taskqueue.AddTask(task)

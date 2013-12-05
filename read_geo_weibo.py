@@ -15,6 +15,7 @@ import multithread
 import json
 from cStringIO import StringIO
 import gzip
+from kombu import Exchange,Producer
 
 def SplitWeiboInfo(line):
     if not 'user' in line:
@@ -98,11 +99,13 @@ class ReadGeoTask(QueueClient.Task):
             return
         print "%d read page %d"%(self.taskinfo['id'],self.page)
         not_go_next_page=False
+        global publish_exchange
         for line in statuses:
             line_info=SplitWeiboInfo(line)
             if line_info==None:
                 continue
             data,user=line_info
+            publish_exchange.publish(json.dumps(data,ensure_ascii=False))
             self.max_id=max(self.max_id,data["_id"])
             if data["_id"]<self.last_weibo_id:
                 not_go_next_page=True
@@ -118,6 +121,7 @@ class ReadGeoTask(QueueClient.Task):
             if line_info==None:
                 continue
             data,user=line_info
+            publish_exchange.publish(json.dumps(data,ensure_ascii=False))
             self.weiboslist[data['_id']]=data
             self.userslist[user['id']]=user
 
@@ -172,6 +176,7 @@ if __name__ == '__main__':
     start_work_time=time.time()
     run_start_time=0
     taskqueue=None
+    publish_exchange=None
     while True:
         run_start_time=time.time()
         pos_db=sqlite3.connect("GeoData/GeoPointList.db")
@@ -200,6 +205,7 @@ if __name__ == '__main__':
 
         if len(pos_to_record)==0:
             if taskqueue:
+                publish_exchange=None
                 taskqueue.Close()
                 taskqueue=None
             print 'sleep for not thing to update'
@@ -210,6 +216,8 @@ if __name__ == '__main__':
             if taskqueue is None:
                 taskqueue=QueueClient.TaskQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,
                                                   'weibo_request',True)
+                exch=Exchange('weibodownload',type='topic',channel=taskqueue.channel,durable=True,delivery_mode=2)
+                publish_exchange = Producer(taskqueue.channel,exch,routing_key='weibo.geo')
             PAGE_ONE_COUNT=3
             for i in range(0,len(pos_to_record),PAGE_ONE_COUNT):
                 b=pos_to_record[i:i+PAGE_ONE_COUNT]
@@ -219,5 +227,6 @@ if __name__ == '__main__':
                     taskqueue.AddTask(task)
                 taskqueue.WaitResult()
         except Exception,e:
+            publish_exchange=None
             taskqueue=None
             print e

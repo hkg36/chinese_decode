@@ -8,6 +8,7 @@ from kombu import Exchange, Queue
 from xml.etree import cElementTree as ElementTree
 import html5lib
 import traceback
+import socket
 class QueueClient(object):
     def __init__(self,host,port,virtual_host,usr,psw,queue_name,needresult=True,result_queuename=None):
         self.host=host
@@ -26,7 +27,7 @@ class QueueClient(object):
         self.Connect()
     def Connect(self):
         self.connection = Connection(hostname=self.host,port=self.port,userid=self.usr,password=self.psw,virtual_host=self.virtual_host,
-                                     transport='kombu.transport.pyamqp:Transport',heartbeat=10)
+                                     transport='kombu.transport.pyamqp:Transport')
         self.channel = self.connection.channel()
         self.producer=Producer(self.channel)
         self.task_count=0
@@ -63,8 +64,10 @@ class QueueClient(object):
             if time.time()-self.last_response_time>120:
                 self.task_count=0
                 break
-            self.connection.drain_events(timeout=10)
-            self.connection.heartbeat_check(2)
+            try:
+                self.connection.drain_events(timeout=10)
+            except socket.timeout,e:
+                pass
         tmp1,tmp2=self.last_result_headers,self.last_result_body
         self.last_result_headers,self.last_result_body=None,None
         return tmp1,tmp2
@@ -112,8 +115,10 @@ class TaskQueueClient(QueueClient):
                 print traceback.format_exc()
     def WaitResult(self):
         while self.tasklist:
-            self.connection.drain_events(timeout=10)
-            self.connection.heartbeat_check(2)
+            try:
+                self.connection.drain_events(timeout=10)
+            except socket.timeout,e:
+                pass
             nowtime=time.time()
             if nowtime-self.last_response_time>30:
                 for uuid in self.tasklist.keys():
@@ -208,7 +213,7 @@ if __name__ == '__main__':
     client.Close()
 
     client=WeiboQueueClient(Queue_Server,Queue_Port,Queue_Path,Queue_User,Queue_PassWord,'weibo_request',True)
-    client.SetWeiboConfig('2824743419','9c152c876ec980df305d54196539773f','2.00Iya8SCjn1KFDd12d85ec9cgps2qB')
+    #client.SetWeiboConfig('2824743419','9c152c876ec980df305d54196539773f','2.00Iya8SCjn1KFDd12d85ec9cgps2qB') #如果需要，设置你自己的用户
     client.AddTask({'function':'statuses__user_timeline','params':{'uid':"1931386177"}})
     head,body=client.WaitResult()
     print body
