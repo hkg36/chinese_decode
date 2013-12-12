@@ -78,7 +78,7 @@ if __name__ == '__main__':
             for data in cur:
                 users.append(data)
         if len(users)==0:
-            with weibo_l_u.find({"is_full_info":{'$ne':-1}},{'id':1,'_id':0}).sort({'full_info_time':1}).limit(50) as cur:
+            with weibo_l_u.find({"is_full_info":{'$ne':-1}},{'id':1,'_id':0}).sort([('full_info_time',1)]).limit(50) as cur:
                 for data in cur:
                     users.append(data)
 
