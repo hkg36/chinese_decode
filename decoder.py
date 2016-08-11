@@ -34,7 +34,7 @@ class DbTree:
         self.db = None
         self.cursor=None
 
-        self.dbFileFinder=worddict.DbFileFinder('/app_data/chinese_decode/dbindex')
+        self.dbFileFinder=worddict.DbFileFinder('data/dbindex')
 
         f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
         fnlist=set()
@@ -128,7 +128,8 @@ class LineSpliter:
             else:
                 NoCnFound()
 
-            if len(process_work)==0:
+            emptyadd=len(process_work)==0
+            if emptyadd:
                 process_work.append(SearchWork(index,self.search_root))
             next_round_process_word=[]
             for one_proc in process_work:
@@ -140,14 +141,14 @@ class LineSpliter:
                     next_round_process_word.append(one_proc)
                     #else:
                 #    ProcessCellDie(one_proc)
-
-            sw=SearchWork(index,self.search_root)
-            res=sw.test_next_word(char)
-            if isinstance(res,FoundWord):
-                found_word.append(res)
-                next_round_process_word.append(sw)
-            elif res==True:
-                next_round_process_word.append(sw)
+            if not emptyadd:
+                sw=SearchWork(index,self.search_root)
+                res=sw.test_next_word(char)
+                if isinstance(res,FoundWord):
+                    found_word.append(res)
+                    next_round_process_word.append(sw)
+                elif res==True:
+                    next_round_process_word.append(sw)
 
             process_work=next_round_process_word
 
@@ -169,11 +170,8 @@ class LineSpliter:
         self.CheckCantantPre()
         self.CheckTail()
 
-        self.CheckDoubleOverlap()
+        #self.CheckDoubleOverlap()
         self.CheckAfterOverlap()
-
-        self.CheckCantantPre()
-        self.CheckTail()
 
         self.CheckName()
     def ProcessLine(self,line):
@@ -215,35 +213,40 @@ class LineSpliter:
 
     def CheckAfterOverlap(self):
         #后词包含前词的结尾的时候，重叠部分归出现概率大的词
-        for index in xrange(len(self.found_word)-1,0,-1):
+        index=len(self.found_word)-1
+        while True:
+            if index<1:
+                break
             aft_word=self.found_word[index]
             now_word=self.found_word[index-1]
 
             i2=now_word.pos+len(now_word.word)-aft_word.pos
             if i2<=0:
+                index-=1
                 continue
-
             if (now_word.info!=None and aft_word.info!=None) and\
-                    (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>2):
-                #字归后词 重新拆分前词
-                new_word=now_word.word
-                new_word=new_word[0:len(new_word)-i2]
-                new_found=self.BaseSplitLine(new_word)
+                    (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>1):
+                new_word = aft_word.word[i2:]
+                new_found = self.BaseSplitLine(new_word)
+                offset_index = aft_word.pos + i2
                 for found in new_found:
-                    found.pos+=now_word.pos
-                del self.found_word[index-1]
-                self.found_word.extend(new_found)
-                self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
-            else:
-                new_word=aft_word.word[i2:]
-                new_found=self.BaseSplitLine(new_word)
-                offset_index=aft_word.pos+i2
-                for found in new_found:
-                    found.pos+=offset_index
+                    found.pos += offset_index
                 del self.found_word[index]
                 self.found_word.extend(new_found)
-                self.found_word.sort(lambda a,b:cmp(a.pos,b.pos))
-
+                self.found_word.sort(lambda a, b: cmp(a.pos, b.pos))
+            else:
+                # 字归后词 重新拆分前词
+                new_word = now_word.word
+                new_word = new_word[0:len(new_word) - i2]
+                new_found = self.BaseSplitLine(new_word)
+                for found in new_found:
+                    found.pos += now_word.pos
+                del self.found_word[index - 1]
+                self.found_word.extend(new_found)
+                self.found_word.sort(lambda a, b: cmp(a.pos, b.pos))
+            self.CheckCantantPre()
+            self.CheckTail()
+            index-=1
 
     def CheckTail(self):
         #检查下一个词语是当前词语的后半部分 全文索引不需要这个
@@ -414,7 +417,7 @@ if __name__ == '__main__':
     fp=codecs.open('testdata.txt','r','utf-8')
     full_text=fp.read()
     fp.close()
-    #full_text=u"南京市长江大桥"
+    #full_text=u"张悟本神话"
     text_pice=re.split(u"[\s!?,。；，：“ ”（ ）、？《》·]+",full_text)
     text_list=[]
     for tp in text_pice:
@@ -439,5 +442,7 @@ if __name__ == '__main__':
                 groups=word.info.get('group')
                 if groups:
                     groupstr=','.join(groups)
-            print u">>%s %s"%(word.word,word.word_type_list),groupstr
-    grouptree.EndCountGroup()
+            #print u">>%s "%(word.word,word.word_type_list),groupstr
+            print u"%s/" % (word.word),
+        print u"\n"
+    #grouptree.EndCountGroup()

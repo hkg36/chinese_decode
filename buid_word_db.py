@@ -128,6 +128,6 @@ def DumpGroupTree():
 if __name__ == '__main__':
     print worddict2.version()
     wordlist=BuildDefaultWordDic()
-    buildres=worddict2.buildDict('/app_data/chinese_decode/dbindex',wordlist)
+    buildres=worddict2.buildDict('data/dbindex',wordlist)
     print 'build res:',buildres
     DumpGroupTree()
