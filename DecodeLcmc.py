@@ -1,7 +1,5 @@
 #-*-coding:utf-8-*-
 import xml.etree.cElementTree as etree
-import xml.dom.minidom
-import os
 import os.path
 import json
 import gzip

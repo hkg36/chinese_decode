@@ -40,18 +40,13 @@ class WordTree:
             wordlist.append((one.encode('utf8'),pickle.dumps(info,pickle.HIGHEST_PROTOCOL)))
         return wordlist
     def LoadWordType(self):
-        fp=gzip.open('data/dictbase/word_pos.txt.gz')
+        fp=open('hmm/wordtype.txt')
         print 'data/dictbase/word_pos.txt.gz loaded'
         word_pos=json.load(fp)
         fp.close()
         for word in word_pos:
-            wordtype=word_pos[word]
-            wt=[]
-            for type in wordtype:
-                wt.append((type,wordtype[type]))
-            wt.sort(lambda a,b:cmp(a[1],b[1]))
-            wc=self.AddWordToTree(word)
-            wc.type=[a[0] for a in wt]
+            wc = self.AddWordToTree(word)
+            wc.type=word_pos[word]
     def LoadWordFreqFile(self):
         try:
             fp=gzip.open("data/dictbase/word_freq.txt.gz")
@@ -73,8 +68,8 @@ class WordTree:
             else:
                 addedCell.weight=math.log(freq,math.e)
     def LoadHudongbaikeWords(self):
-        fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz','r')
-        print '../fetch_hudongbaike/data/hudongbaike_groupofword.txt.gz loaded'
+        fp=gzip.open('data/hudongbaike_groupofword.txt.gz','r')
+        print 'data/hudongbaike_groupofword.txt.gz loaded'
         word_group=json.load(fp)
         fp.close()
         for word in word_group:

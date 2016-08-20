@@ -4,6 +4,7 @@ import string
 import codecs
 import pickle
 import gzip
+import math
 
 try:
     import ujson as json
@@ -92,7 +93,7 @@ class SearchWork:
                 return False
 class StaticVar:
     pass
-StaticVar.number_set=set(u"0123456789%.一二三四五六七八九十百千万亿几某多单双")
+StaticVar.number_set=set(u"0123456789%.一二三四五六七八九十百千万亿几某多单双廿零")
 class LineSpliter:
     def __init__(self,search_root):
         self.found_word=None
@@ -163,14 +164,16 @@ class LineSpliter:
 
         for one in found_word:
             one.info=self.search_root.getwordinfo(one.word)
+            if "freq" in one.info and one.info['freq']>0:
+                one.info['freq']=math.log10(one.info['freq'])
         return found_word
     def SplitLine(self,line):
         self.found_word=self.BaseSplitLine(line)
     def AfterProcess(self):
+
         self.CheckCantantPre()
         self.CheckTail()
-
-        #self.CheckDoubleOverlap()
+        #self.CheckOverlap()
         self.CheckAfterOverlap()
 
         self.CheckName()
@@ -182,26 +185,55 @@ class LineSpliter:
     def printFoundList(self):
         for word in self.found_word:
             print "))-",word.pos,word.word
-    def CheckDoubleOverlap(self):
-        #检查当前词语刚好前半部分是前一个词后半部分是后一个词 当前词删除
-        start_pos=1;
-        while True:
-            gorecheck=False
-            if len(self.found_word)>=3:
-                for index in xrange(start_pos,len(self.found_word)-1):
-                    pre_word=self.found_word[index-1]
-                    aft_word=self.found_word[index+1]
-
-                    if pre_word.pos+len(pre_word.word)==aft_word.pos:
-                        start_pos=max(start_pos-1,1)
-                        gorecheck=True
-                        del self.found_word[index]
+    def CheckOverlap(self):
+        check_index=[]
+        end_index = len(self.found_word)
+        for i in xrange(end_index):
+            if self.found_word[i].pos==0:
+                check_index.append(i)
+            else:
+                break
+        while check_index:
+            next_round_check_index=[]
+            for i in check_index:
+                nowword=self.found_word[i]
+                nowword.pass_check=True
+                endpos=nowword.pos+len(nowword.word)
+                for ci in xrange(i+1,end_index):
+                    ciw=self.found_word[ci]
+                    if ciw.pos==endpos:
+                        next_round_check_index.append(ci)
+                    elif ciw.pos>endpos:
                         break
-                    if gorecheck:
-                        break
-            if gorecheck==False:
+            check_index=next_round_check_index
+        check_index=[end_index-1,]
+        wend_pos=self.found_word[-1].pos+len(self.found_word[-1].word)-1
+        for i in xrange(end_index-2,-1,-1):
+            if (self.found_word[i].pos+len(self.found_word[i].word)-1)==wend_pos:
+                check_index.append(i)
+            else:
                 break
 
+        while check_index:
+            next_round_check_index=[]
+            for i in check_index:
+                nowword=self.found_word[i]
+                nowword.back_pass_check = True
+                endpos=nowword.pos
+                for ci in xrange(i-1,-1,-1):
+                    ciw=self.found_word[ci]
+                    cend=ciw.pos+len(ciw.word)
+                    if cend==endpos:
+                        next_round_check_index.append(ci)
+                    elif cend<endpos:
+                        break
+            check_index=next_round_check_index
+
+        new_word_order=[]
+        for one in self.found_word:
+            if hasattr(one,"pass_check") and hasattr(one,"back_pass_check"):
+                new_word_order.append(one)
+        self.found_word=new_word_order
     def CheckCantantPre(self):
         #检查前一个词语是当前词语的一部分 全文索引不需要这个
         if len(self.found_word)>=2:
@@ -225,7 +257,7 @@ class LineSpliter:
                 index-=1
                 continue
             if (now_word.info!=None and aft_word.info!=None) and\
-                    (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']>1):
+                    (now_word.info['freq']==0 or aft_word.info['freq']/now_word.info['freq']<0.5):
                 new_word = aft_word.word[i2:]
                 new_found = self.BaseSplitLine(new_word)
                 offset_index = aft_word.pos + i2
