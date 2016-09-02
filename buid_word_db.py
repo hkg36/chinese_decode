@@ -68,13 +68,16 @@ class WordTree:
             else:
                 addedCell.weight=math.log(freq,math.e)
     def LoadHudongbaikeWords(self):
-        fp=gzip.open('data/hudongbaike_groupofword.txt.gz','r')
-        print 'data/hudongbaike_groupofword.txt.gz loaded'
-        word_group=json.load(fp)
+        fp=codecs.open('dict/hudongwords.txt','r','utf8')
+        print 'dict/hudongwords loaded'
+        while True:
+            line=fp.readline()
+            if not line:
+                break
+            wc = self.AddWordToTree(line.strip())
         fp.close()
-        for word in word_group:
-            wc=self.AddWordToTree(word)
-            wc.wordgroup=word_group[word].get('group')
+        #for word in word_group:
+         #   wc=self.AddWordToTree(word)
         """fp=gzip.open('../fetch_hudongbaike/data/hudongbaike_allword.txt.gz','r')
         info = codecs.lookup('utf-8')
         fp = codecs.StreamReaderWriter(fp, info.streamreader, info.streamwriter)
@@ -86,8 +89,8 @@ class WordTree:
                 wc.wordgroup=word_attr.get('group')
         fp.close()"""
     def LoadXinHuaZhiDian(self):
-        db=sqlite3.connect('../fetch_hudongbaike/data/xinhuazhidian.db')
-        print '../fetch_hudongbaike/data/xinhuazhidian.db loaded'
+        db=sqlite3.connect('data/xinhuazhidian.db')
+        print 'data/xinhuazhidian.db loaded'
         dc=db.cursor()
         dc.execute('select distinct(word) from words')
         for word, in dc:
@@ -125,4 +128,4 @@ if __name__ == '__main__':
     wordlist=BuildDefaultWordDic()
     buildres=worddict2.buildDict('data/dbindex',wordlist)
     print 'build res:',buildres
-    DumpGroupTree()
+    #DumpGroupTree()

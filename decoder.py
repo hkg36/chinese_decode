@@ -38,9 +38,7 @@ class DbTree:
         self.dbFileFinder=worddict.DbFileFinder('data/dbindex')
 
         f=codecs.open('data/dictbase/firstname_list.txt','r','utf8')
-        fnlist=set()
-        for line in f:
-            fnlist.add(line.strip())
+        fnlist=set(re.split("\s+",f.read()))
         f.close()
         self.firstname=fnlist
     def findword(self,word):

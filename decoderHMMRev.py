@@ -19,18 +19,19 @@ def BuildWordMap(wordlist):
     startpoint=[]
     head=MapHead()
     head.next=startpoint
-    for i in xrange(len(wordlist)):
+    wordendpos=wordlist[-1].pos+len(wordlist[-1].word)
+    for i in xrange(len(wordlist)-1,-1,-1):
         o=wordlist[i]
-        if o.pos==0:
+        if (o.pos+len(o.word))==wordendpos:
             startpoint.append(MapCell(o,i,head))
     def FindNext(startpoint,wordlist):
         for sp in startpoint:
             nextpoint = []
             sp.next=nextpoint
-            nextstart=wordlist[sp.index].pos+len(wordlist[sp.index].word)
-            for i in xrange(sp.index+1,len(wordlist)):
+            nextstart=wordlist[sp.index].pos
+            for i in xrange(sp.index-1,-1,-1):
                 o=wordlist[i]
-                if o.pos==nextstart:
+                if (o.pos+len(o.word))==nextstart:
                     nextpoint.append(MapCell(o,i,sp))
             FindNext(nextpoint,wordlist)
     FindNext(startpoint,wordlist)
@@ -41,14 +42,12 @@ class HMM(object):
         data=json.load(file)
         file.close()
         self.typecount=data["typecount"]
-        self.typetranscount=data['typetranscount_pre']
-        self.headtype=data['starttype']
+        self.typetranscount=data['typetranscount_rev']
+        self.headtype=data['endtype']
     def SignWordType(self,found_word):
         for one in found_word:
             if "type" in one.info:
                 types=one.info["type"]
-            elif one.is_no_cn and one.is_num:
-                types=["m"]
             else:
                 types=["n"]
             one.types=types
@@ -71,11 +70,11 @@ def BuildTypeMap(wordmap,hmm):
         for type in map.word.types:
             tc=TypeMapCell(type,map)
             tc.last=tmap
-            wordlongadd=(len(tc.word.word.word)-1)*0.9
+            wordlongadd=(len(tc.word.word.word)-1)*0.8
             if tmap==typeh:
                 tc.posible=hmm.headtype[tc.type]+hmm.typecount[tc.type]+wordlongadd
             else:
-                ttrans=tmap.type+">"+tc.type
+                ttrans=tc.type+">"+tmap.type
                 translist=hmm.typetranscount[tmap.type]
                 if ttrans in translist:
                     tc.posible=tmap.posible+translist[ttrans]+hmm.typecount[tc.type]+wordlongadd
@@ -104,10 +103,13 @@ def BuildTypeMap(wordmap,hmm):
     return typeh,tail
 
 def PrintMapPath(typecell):
-    if hasattr(typecell,"last"):
-        PrintMapPath(typecell.last)
-    if typecell.word:
-        print typecell.word.word.word,typecell.type,"/",
+    while typecell:
+        if typecell.word:
+            print typecell.word.word.word,"/",
+        if hasattr(typecell,"last"):
+            typecell=typecell.last
+        else:
+            break
 if __name__ == '__main__':
     word_dict_root=decoder.LoadDefaultWordDic()
 
@@ -123,7 +125,7 @@ if __name__ == '__main__':
             text_list.append(tp)
 
     hmm=HMM()
-    for tp in text_list:
+    for tp in text_list[0:2]:
         print tp
         spliter=decoder.LineSpliter(word_dict_root)
         spliter.SplitLine(tp)
